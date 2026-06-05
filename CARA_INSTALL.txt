@@ -1,0 +1,137 @@
+================================================================
+FLEETMATE v3.0 — PT. MMS
+CARA INSTALL DAN MENJALANKAN
+================================================================
+
+LANGKAH 1 — SETUP DATABASE SUPABASE
+================================================================
+1. Buka supabase.com → login → pilih project fleetmate-mms
+2. Klik SQL Editor (sidebar kiri)
+3. Klik "New query"
+4. Buka file: supabase/setup_fleetmate_v3.sql dengan Notepad
+5. Ctrl+A (pilih semua) → Ctrl+C (copy)
+6. Paste di SQL Editor Supabase
+7. Klik tombol RUN (hijau, pojok kanan)
+8. Tunggu muncul pesan:
+   "Database FleetMate v3.0 siap digunakan!"
+
+9. Jalankan juga migration workflow storing (WAJIB untuk fitur v3.1):
+   - Buka file: supabase/migration_storing_workflow.sql
+   - Copy semua → Paste di SQL Editor → RUN
+   - Tunggu pesan: "Migration storing workflow v3.1 selesai!"
+
+
+LANGKAH 2 — BUAT USER ADMIN
+================================================================
+A. Buat akun di Supabase Authentication:
+   - Supabase → Authentication → Users
+   - Klik "Add user" → "Create new user"
+   - Email    : ramli@mms.co.id
+   - Password : ramli123
+   - Klik "Create User"
+   - CATAT UUID yang muncul (contoh: 6157186e-7b9d-...)
+
+B. Jalankan SQL ini di SQL Editor (ganti UUID):
+   INSERT INTO public.users (id, nama, role, no_hp)
+   VALUES (
+     'PASTE-UUID-DISINI',
+     'Ramli Ruskandi',
+     'admin',
+     '0811xxxxxxx'
+   );
+
+
+LANGKAH 3 — BUAT USER DRIVER (untuk testing di HP)
+================================================================
+A. Buat akun di Supabase Authentication:
+   - Email    : driver1@mms.co.id
+   - Password : driver123
+   - Catat UUID
+
+B. Jalankan SQL (ganti UUID):
+   INSERT INTO public.users (id, nama, role, no_hp, nopol_assign)
+   VALUES (
+     'PASTE-UUID-DRIVER',
+     'Budi Santoso',
+     'driver',
+     '08222222222',
+     'B 1001 MMS'
+   );
+
+
+LANGKAH 4 — INSTALL DAN JALANKAN REACT
+================================================================
+1. Extract ZIP ini ke folder pilihan
+   Contoh: D:\Projects\fleetmate
+
+2. Buka Command Prompt (CMD) di folder "frontend":
+   - Buka folder frontend di File Explorer
+   - Klik address bar atas
+   - Ketik: cmd
+   - Tekan Enter
+
+3. Jalankan perintah ini satu per satu:
+
+   npm install
+
+   (Tunggu selesai 2-5 menit)
+
+   npm start
+
+4. Browser otomatis terbuka ke: http://localhost:3000
+
+
+LANGKAH 5 — LOGIN
+================================================================
+ADMIN (buka di PC/Laptop):
+  URL      : http://localhost:3000
+  Email    : ramli@mms.co.id
+  Password : ramli123
+
+DRIVER (buka di HP):
+  - HP dan komputer harus WiFi yang SAMA
+  - Cari IP komputer: buka CMD → ketik ipconfig
+  - Lihat "IPv4 Address" contoh: 192.168.1.100
+  - Buka Chrome di HP → ketik: http://192.168.1.100:3000
+  - Login dengan: driver1@mms.co.id / driver123
+
+
+FITUR YANG TERSEDIA
+================================================================
+ADMIN (Dashboard PC):
+  ✅ Overview armada realtime (9 status unit)
+  ✅ Manajemen P2H harian + foto
+  ✅ Manajemen SPK (buat SPK, update status)
+  ✅ Approval Storing (setujui/tolak + auto buat SPK)
+  ✅ Data Unit (tabel master armada)
+
+DRIVER (Aplikasi HP):
+  ✅ Home dashboard + status P2H hari ini
+  ✅ P2H Digital (16 item checklist + upload foto)
+  ✅ Request Storing (GPS otomatis + foto)
+  ✅ Laporan Kerusakan (3 step: jenis → detail → foto+lokasi)
+
+
+TROUBLESHOOTING
+================================================================
+❌ "npm not recognized"
+   → Install Node.js di nodejs.org (pilih LTS)
+   → Restart CMD setelah install
+
+❌ Halaman putih / error merah
+   → Pastikan SQL sudah dijalankan di Supabase
+   → Pastikan user sudah dibuat di tabel public.users
+
+❌ HP tidak bisa buka aplikasi
+   → Pastikan HP dan komputer WiFi SAMA
+   → Cek IP komputer dengan: ipconfig
+   → Pastikan npm start masih berjalan di CMD
+
+❌ Login gagal
+   → Cek SQL: SELECT * FROM public.users;
+   → Pastikan UUID sudah diinsert dengan benar
+
+================================================================
+FleetMate v3.0 © 2025 PT. MMS
+Dibuat dengan React + Supabase
+================================================================
