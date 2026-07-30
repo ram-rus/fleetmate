@@ -74,30 +74,34 @@ function A({ children }) {
 }
 
 // ─── Routes ───────────────────────────────────────────────
+// ─── Routes ───────────────────────────────────────────────
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace/>}/>
+      {/* Jika domain admin dibuka -> ke /login */}
+      {/* Jika domain driver dibuka -> ke /driver */}
+      <Route path="/" element={<Navigate to={defaultRedirect} replace/>}/>
+
+      {/* Auth Driver */}
+      <Route path="/driver/login" element={<DriverGuestOnly><DriverLoginPage/></DriverGuestOnly>}/>
+
+      {/* Driver Pages */}
+      <Route path="/driver"           element={<DriverOnly><D><DriverHome/></D></DriverOnly>}/>
+      <Route path="/driver/p2h"       element={<DriverOnly><D><DriverP2H/></D></DriverOnly>}/>
+      <Route path="/driver/kerusakan" element={<DriverOnly><D><DriverKerusakan/></D></DriverOnly>}/>
+      <Route path="/driver/histori"   element={<DriverOnly><D><DriverHistori/></D></DriverOnly>}/>
 
       {/* Auth Admin */}
       <Route path="/login" element={<GuestOnly><LoginPage/></GuestOnly>}/>
 
-      {/* Auth Driver — terpisah, pakai No HP + PIN */}
-      <Route path="/driver/login" element={<DriverGuestOnly><DriverLoginPage/></DriverGuestOnly>}/>
-
-      {/* Admin */}
+      {/* Admin Pages */}
       <Route path="/admin"                 element={<AdminOnly><A><OverviewPage/></A></AdminOnly>}/>
       <Route path="/admin/p2h"             element={<AdminOnly><A><P2HAdminPage/></A></AdminOnly>}/>
       <Route path="/admin/laporan-storing" element={<AdminOnly><A><LaporanStoringPage/></A></AdminOnly>}/>
       <Route path="/admin/unit"            element={<AdminOnly><A><UnitPage/></A></AdminOnly>}/>
 
-      {/* Driver */}
-      <Route path="/driver"           element={<DriverOnly><DriverHome/></DriverOnly>}/>
-      <Route path="/driver/p2h"       element={<DriverOnly><DriverP2H/></DriverOnly>}/>
-      <Route path="/driver/kerusakan" element={<DriverOnly><DriverKerusakan/></DriverOnly>}/>
-      <Route path="/driver/histori"   element={<DriverOnly><DriverHistori/></DriverOnly>}/>
-
-      <Route path="*" element={<Navigate to="/login" replace/>}/>
+      {/* Fallback jika route tidak ditemukan */}
+      <Route path="*" element={<Navigate to={defaultRedirect} replace/>}/>
     </Routes>
   );
 }
