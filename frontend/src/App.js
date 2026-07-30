@@ -1,4 +1,4 @@
-// src/App.js — FleetMate v6 — Driver pakai sistem login terpisah (No HP + PIN)
+// src/App.js — FleetMate v6
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
@@ -34,7 +34,7 @@ function Loading() {
   );
 }
 
-// ─── Guards Admin (Supabase Auth) ──────────────────────────
+// ─── Guards Admin ──────────────────────────────────────────
 function AdminOnly({ children }) {
   const { user, profile, loading } = useAuth();
   if (loading) return <Loading/>;
@@ -46,14 +46,13 @@ function AdminOnly({ children }) {
 function GuestOnly({ children }) {
   const { user, profile, loading } = useAuth();
   if (loading) return <Loading/>;
-  if (user && profile) {
-    if (['admin','supervisor','manager'].includes(profile.role)) return <Navigate to="/admin" replace/>;
-    if (profile.role === 'mekanik') return <Navigate to="/admin" replace/>;
+  if (user && profile && ['admin','supervisor','manager'].includes(profile.role)) {
+    return <Navigate to="/admin" replace/>;
   }
   return children;
 }
 
-// ─── Guard Driver (No HP + PIN — terpisah dari Supabase Auth) ──
+// ─── Guards Driver ─────────────────────────────────────────
 function DriverOnly({ children }) {
   const { driver, loading } = useDriverAuth();
   if (loading) return <Loading/>;
@@ -61,7 +60,6 @@ function DriverOnly({ children }) {
   return children;
 }
 
-// Driver yang sudah login tidak perlu ke halaman login lagi
 function DriverGuestOnly({ children }) {
   const { driver, loading } = useDriverAuth();
   if (loading) return <Loading/>;
@@ -73,23 +71,32 @@ function A({ children }) {
   return <AdminLayout>{children}</AdminLayout>;
 }
 
-// ─── Routes ───────────────────────────────────────────────
+// ─── Component Penentu Root Path ──────────────────────────
+function RootRedirect() {
+  // Cek hostname secara dinamis
+  const hostname = window.location.hostname;
+  const isAdminDomain = hostname.includes('admin');
+  
+  // Jika domain mengandung kata 'admin' -> ke /login, jika tidak -> ke /driver
+  const target = isAdminDomain ? '/login' : '/driver';
+  return <Navigate to={target} replace />;
+}
+
 // ─── Routes ───────────────────────────────────────────────
 function AppRoutes() {
   return (
     <Routes>
-      {/* Jika domain admin dibuka -> ke /login */}
-      {/* Jika domain driver dibuka -> ke /driver */}
-      <Route path="/" element={<Navigate to={defaultRedirect} replace/>}/>
+      {/* Root redirect sesuai domain */}
+      <Route path="/" element={<RootRedirect />} />
 
       {/* Auth Driver */}
       <Route path="/driver/login" element={<DriverGuestOnly><DriverLoginPage/></DriverGuestOnly>}/>
 
       {/* Driver Pages */}
-      <Route path="/driver"           element={<DriverOnly><D><DriverHome/></D></DriverOnly>}/>
-      <Route path="/driver/p2h"       element={<DriverOnly><D><DriverP2H/></D></DriverOnly>}/>
-      <Route path="/driver/kerusakan" element={<DriverOnly><D><DriverKerusakan/></D></DriverOnly>}/>
-      <Route path="/driver/histori"   element={<DriverOnly><D><DriverHistori/></D></DriverOnly>}/>
+      <Route path="/driver"           element={<DriverOnly><DriverHome/></DriverOnly>}/>
+      <Route path="/driver/p2h"       element={<DriverOnly><DriverP2H/></DriverOnly>}/>
+      <Route path="/driver/kerusakan" element={<DriverOnly><DriverKerusakan/></DriverOnly>}/>
+      <Route path="/driver/histori"   element={<DriverOnly><DriverHistori/></DriverOnly>}/>
 
       {/* Auth Admin */}
       <Route path="/login" element={<GuestOnly><LoginPage/></GuestOnly>}/>
@@ -101,7 +108,7 @@ function AppRoutes() {
       <Route path="/admin/unit"            element={<AdminOnly><A><UnitPage/></A></AdminOnly>}/>
 
       {/* Fallback jika route tidak ditemukan */}
-      <Route path="*" element={<Navigate to={defaultRedirect} replace/>}/>
+      <Route path="*" element={<RootRedirect />} />
     </Routes>
   );
 }
