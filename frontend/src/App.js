@@ -23,6 +23,12 @@ import DriverLoginPage   from './pages/driver/auth/DriverLoginPage';
 // Auth admin
 import LoginPage         from './pages/auth/LoginPage';
 
+// Atur berbeda pada masing-masing Vercel Project:
+// - fleetmate-mms: REACT_APP_APP_MODE=admin
+// - fleetmate-driver: REACT_APP_APP_MODE=driver
+const APP_MODE = (process.env.REACT_APP_APP_MODE || 'admin').toLowerCase();
+const HOME_ROUTE = APP_MODE === 'driver' ? '/driver/login' : '/login';
+
 // ─── Loading screen ───────────────────────────────────────
 function Loading() {
   return (
@@ -77,7 +83,7 @@ function A({ children }) {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace/>}/>
+      <Route path="/" element={<Navigate to={HOME_ROUTE} replace/>}/>
 
       {/* Auth Admin */}
       <Route path="/login" element={<GuestOnly><LoginPage/></GuestOnly>}/>
