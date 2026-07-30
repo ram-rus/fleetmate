@@ -133,6 +133,78 @@ CREATE TABLE public.storing (
   updated_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE public.storing ADD COLUMN IF NOT EXISTS mekanik_id           UUID REFERENCES public.users(id) ON DELETE SET NULL;
+ALTER TABLE public.storing ADD COLUMN IF NOT EXISTS tgl_berangkat        DATE;
+ALTER TABLE public.storing ADD COLUMN IF NOT EXISTS jam_berangkat        TIME;
+ALTER TABLE public.storing ADD COLUMN IF NOT EXISTS jam_estimasi_tiba    TIME;
+ALTER TABLE public.storing ADD COLUMN IF NOT EXISTS catatan_driver       TEXT;
+ALTER TABLE public.storing ADD COLUMN IF NOT EXISTS progres              TEXT DEFAULT 'Menunggu Mekanik';
+ALTER TABLE public.storing ADD COLUMN IF NOT EXISTS laporan_kerusakan_id UUID;
+ALTER TABLE public.storing ADD COLUMN IF NOT EXISTS ditugaskan_at        TIMESTAMPTZ;
+ALTER TABLE public.storing ADD COLUMN IF NOT EXISTS ditugaskan_oleh      UUID REFERENCES public.users(id) ON DELETE SET NULL;
+
+CREATE TABLE public.perbaikan (
+  id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  unit_id            UUID NOT NULL REFERENCES public.units(id) ON DELETE CASCADE,
+  driver_id          UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  dibuat_oleh        UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  laporan_id         UUID REFERENCES public.laporan_kerusakan(id) ON DELETE SET NULL,
+  sumber             TEXT NOT NULL DEFAULT 'driver_app' CHECK (sumber IN ('driver_app','admin_manual')),
+  tipe               TEXT NOT NULL CHECK (tipe IN ('storing_internal','storing_luar','pulang_ke_pool','perbaikan_pool','bengkel_luar')),
+  status             TEXT NOT NULL DEFAULT 'Disetujui' CHECK (status IN ('Disetujui','Berjalan','Selesai','Ditolak','Lanjut Perjalanan')),
+  progres            TEXT DEFAULT 'Menunggu Mekanik' CHECK (progres IN ('Menunggu Mekanik','Mekanik Ditugaskan','Mekanik Berangkat','Mekanik Tiba','Perbaikan Berlangsung','Selesai')),
+  deskripsi          TEXT,
+  lokasi             TEXT,
+  lokasi_tipe        TEXT,
+  koordinat_lat      DOUBLE PRECISION,
+  koordinat_lng      DOUBLE PRECISION,
+  foto_urls          TEXT[] DEFAULT '{}',
+  km_kendaraan       INTEGER,
+  tgl_mulai          TIMESTAMPTZ,
+  tgl_selesai        TIMESTAMPTZ,
+  mekanik_id         UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  tgl_berangkat      DATE,
+  jam_berangkat      TIME,
+  estimasi_tiba      TIME,
+  catatan_untuk_driver TEXT,
+  mekanik_luar_nama  TEXT,
+  mekanik_luar_hp    TEXT,
+  created_at         TIMESTAMPTZ DEFAULT NOW(),
+  updated_at         TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE public.perbaikan_log (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  perbaikan_id UUID NOT NULL REFERENCES public.perbaikan(id) ON DELETE CASCADE,
+  status_lama  TEXT,
+  status_baru  TEXT NOT NULL,
+  catatan      TEXT,
+  dibuat_oleh  UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE public.standby_log (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  unit_id      UUID NOT NULL REFERENCES public.units(id) ON DELETE CASCADE,
+  dicatat_oleh UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  alasan       TEXT NOT NULL,
+  catatan      TEXT,
+  status       TEXT NOT NULL DEFAULT 'Aktif' CHECK (status IN ('Aktif','Selesai')),
+  mulai_at     TIMESTAMPTZ DEFAULT NOW(),
+  selesai_at   TIMESTAMPTZ,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE public.storing_log (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  storing_id   UUID NOT NULL REFERENCES public.storing(id) ON DELETE CASCADE,
+  status_lama  TEXT,
+  status_baru  TEXT NOT NULL,
+  catatan      TEXT,
+  dibuat_oleh  UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ============================================================
 -- TABEL NOTIFIKASI
 -- ============================================================
@@ -164,6 +236,16 @@ CREATE TABLE public.laporan_kerusakan (
   spk_id      UUID REFERENCES public.spk(id) ON DELETE SET NULL,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE public.laporan_kerusakan ADD COLUMN IF NOT EXISTS catatan          TEXT;
+ALTER TABLE public.laporan_kerusakan ADD COLUMN IF NOT EXISTS koordinat_lat    DOUBLE PRECISION;
+ALTER TABLE public.laporan_kerusakan ADD COLUMN IF NOT EXISTS koordinat_lng    DOUBLE PRECISION;
+ALTER TABLE public.laporan_kerusakan ADD COLUMN IF NOT EXISTS km_kendaraan     INTEGER;
+ALTER TABLE public.laporan_kerusakan ADD COLUMN IF NOT EXISTS pilihan_driver   TEXT;
+ALTER TABLE public.laporan_kerusakan ADD COLUMN IF NOT EXISTS keputusan_admin  TEXT;
+ALTER TABLE public.laporan_kerusakan ADD COLUMN IF NOT EXISTS diputuskan_oleh  UUID REFERENCES public.users(id) ON DELETE SET NULL;
+ALTER TABLE public.laporan_kerusakan ADD COLUMN IF NOT EXISTS diputuskan_at    TIMESTAMPTZ;
+ALTER TABLE public.laporan_kerusakan ADD COLUMN IF NOT EXISTS perbaikan_id    UUID;
 
 -- ============================================================
 -- INDEXES
@@ -267,7 +349,9 @@ CREATE POLICY "spk_update" ON public.spk FOR UPDATE USING (
 CREATE POLICY "storing_select" ON public.storing FOR SELECT USING (
   public.is_admin_or_above() OR driver_id = auth.uid()
 );
-CREATE POLICY "storing_insert" ON public.storing FOR INSERT WITH CHECK (driver_id = auth.uid());
+CREATE POLICY "storing_insert" ON public.storing FOR INSERT WITH CHECK (
+  public.is_admin_or_above() OR driver_id = auth.uid()
+);
 CREATE POLICY "storing_update" ON public.storing FOR UPDATE USING (
   public.is_admin_or_above() OR (driver_id = auth.uid() AND status = 'Pending')
 );

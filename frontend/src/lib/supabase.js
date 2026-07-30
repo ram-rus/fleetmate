@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const URL = 'https://dbmlukdtykshvtnofbby.supabase.co';
-const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRibWx1a2R0eWtzaHZ0bm9mYmJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NjQ0NTMsImV4cCI6MjA5NjE0MDQ1M30.hBOfAboBbI2m3kzN1vpkZAL84_AwDv1j2jyyniHTy4Y';
+const URL = process.env.REACT_APP_SUPABASE_URL || 'https://dbmlukdtykshvtnofbby.supabase.co';
+const KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
 
 export const supabase = createClient(URL, KEY, {
   auth: { autoRefreshToken:true, persistSession:true, detectSessionInUrl:false }

@@ -58,7 +58,7 @@ export default function StoringProgressPage() {
   async function loadLogs(storingId) {
     const { data } = await supabase
       .from('storing_log')
-      .select('*, user:users!storing_log_dibuat_oleh_fkey(nama)')
+      .select('*, dibuat_oleh_user:users(nama)')
       .eq('storing_id', storingId)
       .order('created_at', { ascending: true });
     setLogs(data || []);
@@ -405,7 +405,7 @@ export default function StoringProgressPage() {
                           </p>
                           {log.catatan && <p style={{ fontSize: 10, color: '#74777f', marginTop: 2 }}>{log.catatan}</p>}
                           <p style={{ fontSize: 10, color: '#c4c7cf', marginTop: 2 }}>
-                            {log.user?.nama} · {new Date(log.created_at).toLocaleString('id-ID')}
+                            {log.dibuat_oleh_user?.nama || 'System'} · {new Date(log.created_at).toLocaleString('id-ID')}
                           </p>
                         </div>
                       </div>

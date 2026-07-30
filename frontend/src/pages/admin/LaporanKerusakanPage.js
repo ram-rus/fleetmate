@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 
 const STATUS_STYLE = {
   'Dilaporkan':                  { bg:'#f3f4f6', color:'#374151' },
+  'Ditangani':                   { bg:'#dbeafe', color:'#1e3a8a' },
   'Menunggu Approval Storing':   { bg:'#fee2e2', color:'#7f1d1d' },
   'Menunggu Keputusan Pengurus': { bg:'#fef3c7', color:'#92400e' },
   'Storing Disetujui':           { bg:'#d1fae5', color:'#065f46' },
@@ -32,11 +33,19 @@ export default function LaporanKerusakanPage() {
       .select(`
         *,
         unit:units(nopol, tipe),
-        driver:users!laporan_kerusakan_driver_id_fkey(nama, no_hp)
+        driver:users(nama, no_hp)
       `)
       .order('created_at', { ascending: false });
 
-    if (filter !== 'Semua') q = q.eq('status', filter);
+    if (filter !== 'Semua') {
+      if (filter === 'Menunggu Approval Storing') {
+        q = q.eq('status', 'Dilaporkan').eq('pilihan_driver', 'minta_storing');
+      } else if (filter === 'Menunggu Keputusan Pengurus') {
+        q = q.eq('status', 'Dilaporkan').eq('pilihan_driver', 'pulang_ke_pool');
+      } else {
+        q = q.eq('status', filter);
+      }
+    }
 
     const { data, error } = await q;
     if (error) { toast.error('Gagal memuat data'); setLoad(false); return; }
@@ -47,7 +56,7 @@ export default function LaporanKerusakanPage() {
   async function handleKeputusan(laporan, keputusan) {
     setSaving(true);
     try {
-      let statusBaru = keputusan === 'approve_storing' ? 'Storing Disetujui' : 'Pulang ke Pool';
+      let statusBaru = 'Ditangani';
 
       // Update laporan
       const { error } = await supabase
@@ -130,8 +139,8 @@ export default function LaporanKerusakanPage() {
     { value: 'Pulang ke Pool',               label: '🏠 Pulang Pool',   count: 0 },
   ];
 
-  const mintaStoring = list.filter(l => l.status === 'Menunggu Approval Storing').length;
-  const menunggu     = list.filter(l => l.status === 'Menunggu Keputusan Pengurus').length;
+  const mintaStoring = list.filter(l => l.status === 'Dilaporkan' && l.pilihan_driver === 'minta_storing').length;
+  const menunggu     = list.filter(l => l.status === 'Dilaporkan' && l.pilihan_driver === 'pulang_ke_pool').length;
 
   if (loading) return (
     <div style={{ padding:40, textAlign:'center', color:'#74777f', fontFamily:'Montserrat,sans-serif' }}>Memuat...</div>

@@ -1,7 +1,7 @@
-// src/pages/driver/P2HPage.js
+// src/pages/driver/P2HPage.js — v5.1 (tidak ada perubahan logika, copy dari upload)
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase, uploadFile, getPublicUrl } from '../../lib/supabase';
-import { useAuth } from '../../context/AuthContext';
+import { useDriverAuth } from '../../context/DriverAuthContext';
 import DriverLayout from '../../components/layout/DriverLayout';
 import toast from 'react-hot-toast';
 
@@ -25,7 +25,7 @@ const ITEMS = [
 ];
 
 export default function DriverP2HPage() {
-  const { profile }          = useAuth();
+  const { driver }           = useDriverAuth();
   const [unitId,  setUnitId] = useState(null);
   const [existing, setExist] = useState(null);
   const [loadingCek, setCek] = useState(true);
@@ -38,21 +38,19 @@ export default function DriverP2HPage() {
   const fileRef = useRef();
 
   useEffect(() => {
-    if (!profile?.nopol_assign) { setCek(false); return; }
+    if (!driver?.unit_id) { setCek(false); return; }
     async function cek() {
-      const { data: unit } = await supabase.from('units').select('id').eq('nopol', profile.nopol_assign).single();
-      if (!unit) { setCek(false); return; }
-      setUnitId(unit.id);
+      setUnitId(driver.unit_id);
       const today = new Date().toISOString().slice(0,10);
-      const { data: p2h } = await supabase.from('p2h').select('*').eq('unit_id', unit.id).eq('tanggal', today).maybeSingle();
+      const { data: p2h } = await supabase.from('p2h').select('*').eq('unit_id', driver.unit_id).eq('tanggal', today).maybeSingle();
       setExist(p2h);
       setCek(false);
     }
     cek();
-  }, [profile]);
+  }, [driver]);
 
-  const adaNOK     = Object.values(hasil).some(v => v !== 'ok');
-  const adaKritis  = ITEMS.filter(i => i.kritis).some(i => hasil[i.key] !== 'ok');
+  const adaNOK    = Object.values(hasil).some(v => v !== 'ok');
+  const adaKritis = ITEMS.filter(i => i.kritis).some(i => hasil[i.key] !== 'ok');
   const statusHasil = adaKritis ? 'TIDAK LAYAK' : 'LAYAK';
 
   function toggleItem(key) {
@@ -62,8 +60,7 @@ export default function DriverP2HPage() {
   function handleFoto(e) {
     const files = Array.from(e.target.files);
     if (fotos.length + files.length > 5) { toast.error('Maks 5 foto'); return; }
-    const newF = files.map(f => ({ file:f, preview: URL.createObjectURL(f) }));
-    setFotos(prev => [...prev, ...newF]);
+    setFotos(prev => [...prev, ...files.map(f => ({ file:f, preview: URL.createObjectURL(f) }))]);
     e.target.value = '';
   }
 
@@ -72,46 +69,38 @@ export default function DriverP2HPage() {
     if (!unitId) { toast.error('Unit tidak ditemukan'); return; }
     setSaving(true);
     try {
-      // Upload foto
       const urls = [];
       for (const { file } of fotos) {
-        const path = await uploadFile('p2h-photos', file, profile.id);
+        const path = await uploadFile('p2h-photos', file, driver.id);
         urls.push(getPublicUrl('p2h-photos', path));
       }
-
       const { error } = await supabase.from('p2h').insert({
-        unit_id:    unitId,
-        driver_id:  profile.id,
-        tanggal:    new Date().toISOString().slice(0,10),
+        unit_id:     unitId,
+        driver_id:   driver.id,
+        tanggal:     new Date().toISOString().slice(0,10),
         hasil,
-        status:     statusHasil,
-        foto_urls:  urls,
+        status:      statusHasil,
+        foto_urls:   urls,
         km_saat_p2h: km ? parseInt(km) : null,
         catatan,
       });
-
       if (error) {
         if (error.code === '23505') toast.error('P2H sudah disubmit hari ini');
         else throw error;
         return;
       }
-
       if (km) await supabase.from('units').update({ km_terakhir: parseInt(km) }).eq('id', unitId);
-
       setDone(true);
       toast.success('P2H berhasil disubmit!');
-    } catch(e) {
-      toast.error('Gagal: ' + e.message);
-    } finally {
-      setSaving(false);
-    }
+    } catch(e) { toast.error('Gagal: ' + e.message); }
+    finally { setSaving(false); }
   }
 
   if (loadingCek) return <DriverLayout title="P2H Digital" back><div style={{ padding:40, textAlign:'center' }}>Memuat...</div></DriverLayout>;
 
-  // Sudah P2H
   if (existing || done) {
     const data = existing || {};
+    const sc = data.status === 'LAYAK' ? '#065f46' : '#7f1d1d';
     return (
       <DriverLayout title="P2H Digital" back>
         <div style={{ padding:24, textAlign:'center' }}>
@@ -121,7 +110,7 @@ export default function DriverP2HPage() {
           <div style={{ background:'#fff', border:'1px solid #ebeced', borderRadius:12, padding:16, textAlign:'left' }}>
             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10, fontSize:12 }}>
               <span style={{ color:'#74777f' }}>Status</span>
-              <span style={{ fontWeight:700, color: data.status==='LAYAK' ? '#065f46' : '#7f1d1d' }}>{data.status || statusHasil}</span>
+              <span style={{ fontWeight:700, color:sc }}>{data.status || statusHasil}</span>
             </div>
             <div style={{ display:'flex', justifyContent:'space-between', fontSize:12 }}>
               <span style={{ color:'#74777f' }}>Waktu</span>
@@ -138,41 +127,33 @@ export default function DriverP2HPage() {
   return (
     <DriverLayout title="P2H Digital" back>
       <div style={{ padding:16 }}>
-
-        {/* Info unit */}
         <div style={{ background:'#1a2b4b', borderRadius:12, padding:14, marginBottom:16, color:'#fff' }}>
           <p style={{ fontSize:10, color:'rgba(255,255,255,0.5)', marginBottom:2 }}>Unit Anda</p>
-          <p style={{ fontSize:18, fontWeight:700 }}>{profile?.nopol_assign || '—'}</p>
+          <p style={{ fontSize:18, fontWeight:700 }}>{driver?.unit_nopol || '—'}</p>
           <p style={{ fontSize:10, color:'rgba(255,255,255,0.5)', marginTop:4 }}>
             {new Date().toLocaleDateString('id-ID',{ weekday:'long', day:'numeric', month:'long' })}
           </p>
         </div>
 
-        {/* Warning jika ada kritis NOK */}
         {adaKritis && (
           <div style={{ background:'#fff1f2', border:'1px solid #fecdd3', borderRadius:8, padding:'10px 14px', marginBottom:12, fontSize:12, color:'#9f1239', fontWeight:600 }}>
             ⚠ Unit akan dinyatakan TIDAK LAYAK — ada item kritis NOK
           </div>
         )}
 
-        {/* KM */}
         <div style={{ marginBottom:14 }}>
           <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:5 }}>KM Saat Ini</label>
           <input type="number" value={km} onChange={e => setKm(e.target.value)} placeholder="Contoh: 87500"
-            style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'10px 12px', fontSize:13, fontFamily:'Montserrat,sans-serif', outline:'none', boxSizing:'border-box' }}
-          />
+            style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'10px 12px', fontSize:13, fontFamily:'Montserrat,sans-serif', outline:'none', boxSizing:'border-box' }}/>
         </div>
 
-        {/* Checklist */}
         <p style={{ fontSize:13, fontWeight:700, color:'#1a1c1e', marginBottom:10 }}>Checklist 16 Item</p>
         <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
           {ITEMS.map(item => {
             const isOK = hasil[item.key] === 'ok';
             return (
               <div key={item.key} onClick={() => toggleItem(item.key)}
-                style={{
-                  display:'flex', alignItems:'center', justifyContent:'space-between',
-                  padding:'12px 14px', borderRadius:10, cursor:'pointer', transition:'all 0.15s',
+                style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 14px', borderRadius:10, cursor:'pointer',
                   border: isOK ? '1px solid #ebeced' : item.kritis ? '1px solid #fca5a5' : '1px solid #fcd34d',
                   background: isOK ? '#fff' : item.kritis ? '#fff1f2' : '#fffbeb',
                 }}>
@@ -180,11 +161,7 @@ export default function DriverP2HPage() {
                   {item.kritis && <span style={{ fontSize:10, background:'#fee2e2', color:'#7f1d1d', padding:'1px 6px', borderRadius:4, fontWeight:700 }}>KRITIS</span>}
                   <span style={{ fontSize:13, fontWeight:600, color: isOK ? '#1a1c1e' : item.kritis ? '#7f1d1d' : '#92400e' }}>{item.label}</span>
                 </div>
-                <span style={{
-                  padding:'4px 12px', borderRadius:20, fontSize:11, fontWeight:700,
-                  background: isOK ? '#d1fae5' : '#fee2e2',
-                  color:      isOK ? '#065f46' : '#7f1d1d',
-                }}>
+                <span style={{ padding:'4px 12px', borderRadius:20, fontSize:11, fontWeight:700, background: isOK?'#d1fae5':'#fee2e2', color: isOK?'#065f46':'#7f1d1d' }}>
                   {isOK ? '✓ OK' : '✕ NOK'}
                 </span>
               </div>
@@ -192,7 +169,6 @@ export default function DriverP2HPage() {
           })}
         </div>
 
-        {/* Upload foto jika ada NOK */}
         {adaNOK && (
           <div style={{ marginBottom:14 }}>
             <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:5 }}>
@@ -204,16 +180,13 @@ export default function DriverP2HPage() {
                   <div key={i} style={{ position:'relative', aspectRatio:1 }}>
                     <img src={f.preview} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:8, border:'1px solid #ebeced' }}/>
                     <button onClick={() => setFotos(prev => prev.filter((_,idx) => idx !== i))}
-                      style={{ position:'absolute', top:4, right:4, width:20, height:20, borderRadius:'50%', background:'#ba1a1a', color:'#fff', border:'none', cursor:'pointer', fontSize:12, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                      ×
-                    </button>
+                      style={{ position:'absolute', top:4, right:4, width:20, height:20, borderRadius:'50%', background:'#ba1a1a', color:'#fff', border:'none', cursor:'pointer', fontSize:12, display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
                   </div>
                 ))}
                 {fotos.length < 5 && (
                   <button onClick={() => fileRef.current?.click()}
                     style={{ aspectRatio:1, border:'2px dashed #c4c7cf', borderRadius:8, background:'#f8f9fa', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4, color:'#74777f' }}>
-                    <span style={{ fontSize:20 }}>+</span>
-                    <span style={{ fontSize:10 }}>Tambah</span>
+                    <span style={{ fontSize:20 }}>+</span><span style={{ fontSize:10 }}>Tambah</span>
                   </button>
                 )}
               </div>
@@ -230,25 +203,19 @@ export default function DriverP2HPage() {
           </div>
         )}
 
-        {/* Catatan */}
         <div style={{ marginBottom:14 }}>
           <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:5 }}>Catatan (opsional)</label>
           <textarea rows={2} value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Catatan tambahan..."
             style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'10px 12px', fontSize:12, fontFamily:'Montserrat,sans-serif', resize:'none', outline:'none', boxSizing:'border-box' }}/>
         </div>
 
-        {/* Status preview */}
-        <div style={{
-          padding:'12px 16px', borderRadius:10, textAlign:'center', fontWeight:700, fontSize:14, marginBottom:16,
-          background: statusHasil === 'LAYAK' ? '#d1fae5' : '#fee2e2',
-          color:      statusHasil === 'LAYAK' ? '#065f46' : '#7f1d1d',
-        }}>
+        <div style={{ padding:'12px 16px', borderRadius:10, textAlign:'center', fontWeight:700, fontSize:14, marginBottom:16,
+          background: statusHasil==='LAYAK'?'#d1fae5':'#fee2e2', color: statusHasil==='LAYAK'?'#065f46':'#7f1d1d' }}>
           Hasil P2H: {statusHasil}
         </div>
 
-        {/* Submit */}
         <button onClick={handleSubmit} disabled={saving}
-          style={{ width:'100%', background: saving ? '#6b7280' : '#1a2b4b', color:'#fff', border:'none', borderRadius:10, padding:'14px 0', fontSize:14, fontWeight:700, fontFamily:'Montserrat,sans-serif', cursor: saving ? 'not-allowed' : 'pointer' }}>
+          style={{ width:'100%', background: saving?'#6b7280':'#1a2b4b', color:'#fff', border:'none', borderRadius:10, padding:'14px 0', fontSize:14, fontWeight:700, fontFamily:'Montserrat,sans-serif', cursor: saving?'not-allowed':'pointer' }}>
           {saving ? 'Menyimpan...' : 'Submit P2H'}
         </button>
       </div>

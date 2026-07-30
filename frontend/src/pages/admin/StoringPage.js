@@ -18,7 +18,7 @@ export default function StoringPage() {
   async function load() {
     const { data } = await supabase
       .from('storing')
-      .select('*, unit:units(id,nopol,tipe), driver:users!storing_driver_id_fkey(nama)')
+      .select('*, unit:units(id,nopol,tipe), driver:users(nama)')
       .in('status', ['Pending','Aktif'])
       .order('created_at', { ascending:false });
     setList(data || []);

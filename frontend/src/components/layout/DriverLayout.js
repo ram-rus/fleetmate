@@ -3,10 +3,10 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 
 const NAV = [
-  { to:'/driver',           label:'Home',      icon:'🏠', exact:true },
-  { to:'/driver/p2h',       label:'P2H',       icon:'📋' },
-  { to:'/driver/kerusakan', label:'Kerusakan', icon:'🔧' },
-  { to:'/driver/storing',   label:'Storing',   icon:'📍' },
+  { to:'/driver',           label:'Home',         icon:'🏠', exact:true },
+  { to:'/driver/p2h',       label:'P2H',          icon:'📋' },
+  { to:'/driver/kerusakan', label:'Lapor Masalah',icon:'⚠️' },
+  { to:'/driver/histori',   label:'Histori',      icon:'📜' },
 ];
 
 export default function DriverLayout({ children, title, back }) {
