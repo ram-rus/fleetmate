@@ -42,6 +42,15 @@ function isNestedHasil(hasil) {
   return ['fluida', 'rem', 'ban', 'dokumen', 'lain'].some(k => hasil[k] && typeof hasil[k] === 'object');
 }
 
+// Fallback label kalau ketemu data lama yang isinya string mentah, bukan object {value,label,severity}
+const VALUE_LABEL = {
+  normal:'Normal', berkurang:'Berkurang', kritis:'Kritis', kosong:'Kosong',
+  kurang:'Kurang', bocor:'Bocor', gundul:'Gundul',
+  ada:'Ada', tidak_ada:'Tidak ada', kadaluarsa:'Kadaluarsa',
+  ok:'OK', nok:'NOK',
+};
+const NETRAL_BADGE = { bg:'#f1f0ea', color:'#5f5e5a' }; // dipakai saat severity data lama tidak diketahui
+
 function HasilBreakdown({ hasil }) {
   if (!hasil || Object.keys(hasil).length === 0) return null;
 
@@ -75,12 +84,16 @@ function HasilBreakdown({ hasil }) {
           <div key={secId} style={{ marginBottom:10 }}>
             <p style={{ fontSize:11, color:'#74777f', fontWeight:700, textTransform:'uppercase', marginBottom:6 }}>{SECTION_LABEL[secId] || secId}</p>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:6 }}>
-              {Object.entries(items).map(([key, data]) => {
+              {Object.entries(items).map(([key, raw]) => {
                 const label = ITEM_LABEL[key] || key;
-                const valLabel = data?.label || data?.value || '—';
+                const isObj = raw && typeof raw === 'object';
+                const rawValue = isObj ? raw.value : raw;
+                const valLabel = isObj ? (raw.label || raw.value || '—') : (VALUE_LABEL[raw] || raw || '—');
                 const c = secId === 'dokumen'
-                  ? (data?.value === 'ada' ? SEV_BADGE[0] : SEV_BADGE[2])
-                  : (SEV_BADGE[data?.severity] ?? SEV_BADGE[0]);
+                  ? (rawValue === 'ada' ? SEV_BADGE[0] : SEV_BADGE[2])
+                  : isObj
+                    ? (SEV_BADGE[raw.severity] ?? SEV_BADGE[0])
+                    : NETRAL_BADGE; // data lama (nested-string) — severity tidak tercatat, jangan nebak warna
                 return (
                   <div key={key} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:11, padding:'6px 8px', border:'1px solid #ebeced', borderRadius:6 }}>
                     <span style={{ color:'#44474e' }}>{label}</span>
