@@ -227,12 +227,20 @@ export default function OverviewPage() {
       desc: l.pilihan_driver==='minta_storing' ? '🆘 Minta Storing — menunggu keputusan' : '🏠 Minta Pulang Pool — menunggu keputusan',
       icon:'⚠️', ts:l.created_at,
     }));
-    const p2hItems = p2hWithDriver.map(l=>({
-      id:'p2h-'+l.id, nopol:l.unit?.nopol||'—', nama:l.driver?.nama||'—',
-      tag:'P2H', tagColor:l.status==='LAYAK'?C.green:C.red, tagBg:l.status==='LAYAK'?C.greenBg:C.redBg,
-      desc:`Checklist ${l.status==='LAYAK'?'Selesai — LAYAK':'Selesai — TIDAK LAYAK'}`,
-      icon:l.status==='LAYAK'?'✅':'❌', ts:l.created_at,
-    }));
+    const P2H_TAG = {
+      'LAYAK':                { color: C.green, bg: C.greenBg, icon: '✅', text: 'Selesai — LAYAK' },
+      'LAYAK DENGAN CATATAN': { color: C.amber, bg: C.amberBg, icon: '⚠️', text: 'Selesai — LAYAK DENGAN CATATAN' },
+      'TIDAK LAYAK':          { color: C.red,   bg: C.redBg,   icon: '❌', text: 'Selesai — TIDAK LAYAK' },
+    };
+    const p2hItems = p2hWithDriver.map(l=>{
+      const t = P2H_TAG[l.status] || P2H_TAG['TIDAK LAYAK'];
+      return {
+        id:'p2h-'+l.id, nopol:l.unit?.nopol||'—', nama:l.driver?.nama||'—',
+        tag:'P2H', tagColor:t.color, tagBg:t.bg,
+        desc:`Checklist ${t.text}`,
+        icon:t.icon, ts:l.created_at,
+      };
+    });
     const prbBaruItems = (prbBaruRes.data||[]).filter(x=>x.status!=='Selesai').map(x=>({
       id:'baru-'+x.id, nopol:x.unit?.nopol||'—', nama:'—',
       tag: TIPE_STORING.includes(x.tipe)?'Storing':'Perbaikan',

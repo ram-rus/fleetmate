@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useDriverAuth } from '../../context/DriverAuthContext';
 import DriverLayout from '../../components/layout/DriverLayout';
-import { getTipe, getProgres, PERBAIKAN_SELECT } from '../../lib/perbaikanConstants';
+import { getTipe, getProgres, getProgresList, getProgresIdx, isPerbaikan, PERBAIKAN_SELECT } from '../../lib/perbaikanConstants';
 
 const STATUS_INFO = {
   'Menunggu Approval Storing':        { icon:'🆘', color:'#7f1d1d', bg:'#fff1f2', text:'Menunggu Approval Storing dari Admin' },
@@ -15,16 +15,43 @@ const STATUS_INFO = {
   'Lanjut Perjalanan':                { icon:'🚗', color:'#065f46', bg:'#f0fdf4', text:'Lanjutkan Perjalanan' },
 };
 
-const PROGRES_STEPS = [
-  'Menunggu Mekanik',
-  'Mekanik Ditugaskan',
-  'Mekanik Berangkat',
-  'Mekanik Tiba',
-  'Perbaikan Berlangsung',
-  'Selesai'
-];
+// Label singkat untuk baris bawah stepper — dipetakan dari value asli
+// PROGRES_STORING / PROGRES_PERBAIKAN di perbaikanConstants.js, bukan daftar
+// tahap buatan sendiri, supaya selalu sinkron kalau tahapnya berubah di sana.
+const SHORT_LABEL = {
+  'Menunggu Mekanik':      'Menunggu',
+  'Mekanik Ditugaskan':    'Ditugaskan',
+  'Mekanik Berangkat':     'Berangkat',
+  'Mekanik Tiba':          'Tiba',
+  'Perbaikan Ditugaskan':  'Ditugaskan',
+  'Perbaikan Berlangsung': 'Proses',
+  'Selesai':               'Selesai',
+};
 
-function getKeberangkatanStatus(progres, jamBerangkat, estimasiTiba) {
+function getKeberangkatanStatus(progres, jamBerangkat, estimasiTiba, isPool) {
+  if (isPool) {
+    if (progres === 'Perbaikan Berlangsung') {
+      return {
+        title: '🔧 Perbaikan Sedang Berlangsung',
+        sub: 'Mekanik sedang mengerjakan unit Anda di pool.',
+        color: '#b45309', bg: '#fffbeb', border: '#fde68a', icon: '🔧'
+      };
+    }
+    if (progres === 'Selesai') {
+      return {
+        title: '✅ Perbaikan Selesai',
+        sub: 'Perbaikan rampung. Unit siap kembali beroperasi.',
+        color: '#15803d', bg: '#f0fdf4', border: '#86efac', icon: '✅'
+      };
+    }
+    // Menunggu Mekanik / Mekanik Ditugaskan
+    return {
+      title: '🔧 Mekanik Ditugaskan',
+      sub: 'Mekanik akan segera mulai mengerjakan unit Anda di pool. Tidak perlu menunggu keberangkatan.',
+      color: '#1e40af', bg: '#eff6ff', border: '#93c5fd', icon: '🔧'
+    };
+  }
+
   if (progres === 'Mekanik Berangkat') {
     return {
       title: '🚗 Mekanik Dalam Perjalanan!',
@@ -168,13 +195,16 @@ const ch = supabase.channel(channelId)
   const si   = laporanAktif ? STATUS_INFO[laporanAktif.status] : null;
   const pg   = perbaikanAktif ? getProgres(perbaikanAktif.progres, perbaikanAktif.tipe) : null;
   const tipe = perbaikanAktif ? getTipe(perbaikanAktif.tipe) : null;
-  const pgIdx= perbaikanAktif ? PROGRES_STEPS.indexOf(perbaikanAktif.progres) : -1;
+  const isPool     = isPerbaikan(perbaikanAktif?.tipe);
+  const progresList = perbaikanAktif ? getProgresList(perbaikanAktif.tipe) : [];
+  const stepLabels  = progresList.map(p => SHORT_LABEL[p.value] || p.value);
+  const pgIdx = perbaikanAktif ? getProgresIdx(perbaikanAktif.progres, perbaikanAktif.tipe) : -1;
 
   const namaMekanik = perbaikanAktif?.mekanik?.nama || perbaikanAktif?.mekanik_luar_nama || '';
   const noHpMekanik = perbaikanAktif?.mekanik?.no_hp || perbaikanAktif?.mekanik_luar_hp || '';
   const isMekanikLuar = !!perbaikanAktif?.mekanik_luar_nama;
 
-  const kebStatus = perbaikanAktif ? getKeberangkatanStatus(perbaikanAktif.progres, perbaikanAktif.jam_berangkat, perbaikanAktif.estimasi_tiba) : null;
+  const kebStatus = perbaikanAktif ? getKeberangkatanStatus(perbaikanAktif.progres, perbaikanAktif.jam_berangkat, perbaikanAktif.estimasi_tiba, isPool) : null;
 
   const handleLogout = () => {
     if (window.confirm('Apakah Anda yakin ingin keluar dari akun driver?')) {
@@ -275,7 +305,7 @@ const ch = supabase.channel(channelId)
                 <span style={{ fontSize: 22 }}>{tipe?.icon || '🛠️'}</span>
                 <div>
                   <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#3b82f6', letterSpacing: '0.04em' }}>
-                    ● LIVE TRACKING STORING
+                    ● LIVE TRACKING {isPool ? 'PERBAIKAN' : 'STORING'}
                   </span>
                   <h4 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: 0 }}>
                     {tipe?.label || 'Penanganan Storing'}
@@ -381,21 +411,23 @@ const ch = supabase.channel(channelId)
                 </div>
               )}
 
-              {/* Rincian Jam Berangkat & Estimasi Tiba */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, paddingTop: 10, borderTop: '1px dashed #cbd5e1' }}>
-                <div>
-                  <p style={{ fontSize: 10, color: '#64748b', fontWeight: 600, margin: 0 }}>Jam Berangkat</p>
-                  <p style={{ fontSize: 13, fontWeight: 800, color: perbaikanAktif.jam_berangkat ? '#0f172a' : '#94a3b8', margin: '2px 0 0' }}>
-                    {perbaikanAktif.jam_berangkat ? `🕐 ${perbaikanAktif.jam_berangkat}` : '⏸️ Belum Diisi'}
-                  </p>
+              {/* Rincian Jam Berangkat & Estimasi Tiba — cuma relevan untuk storing, bukan perbaikan pool */}
+              {!isPool && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, paddingTop: 10, borderTop: '1px dashed #cbd5e1' }}>
+                  <div>
+                    <p style={{ fontSize: 10, color: '#64748b', fontWeight: 600, margin: 0 }}>Jam Berangkat</p>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: perbaikanAktif.jam_berangkat ? '#0f172a' : '#94a3b8', margin: '2px 0 0' }}>
+                      {perbaikanAktif.jam_berangkat ? `🕐 ${perbaikanAktif.jam_berangkat}` : '⏸️ Belum Diisi'}
+                    </p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 10, color: '#64748b', fontWeight: 600, margin: 0 }}>Estimasi Tiba</p>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: perbaikanAktif.estimasi_tiba ? '#0284c7' : '#94a3b8', margin: '2px 0 0' }}>
+                      {perbaikanAktif.estimasi_tiba ? `⏳ ± ${perbaikanAktif.estimasi_tiba}` : '—'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p style={{ fontSize: 10, color: '#64748b', fontWeight: 600, margin: 0 }}>Estimasi Tiba</p>
-                  <p style={{ fontSize: 13, fontWeight: 800, color: perbaikanAktif.estimasi_tiba ? '#0284c7' : '#94a3b8', margin: '2px 0 0' }}>
-                    {perbaikanAktif.estimasi_tiba ? `⏳ ± ${perbaikanAktif.estimasi_tiba}` : '—'}
-                  </p>
-                </div>
-              </div>
+              )}
 
               {/* Catatan Admin/Mekanik untuk Driver */}
               {perbaikanAktif.catatan_untuk_driver && (
@@ -408,19 +440,19 @@ const ch = supabase.channel(channelId)
               )}
             </div>
 
-            {/* Visual Progress Stepper (6 Tahap) */}
+            {/* Visual Progress Stepper — dinamis: 3 tahap untuk Perbaikan Pool, 6 tahap untuk Storing */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <p style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', margin: 0 }}>
                   PROGRES PENANGANAN ({pg?.label || perbaikanAktif.progres})
                 </p>
                 <span style={{ fontSize: 10, fontWeight: 700, color: '#2563eb' }}>
-                  {pgIdx >= 0 ? `Tahap ${pgIdx + 1} dari ${PROGRES_STEPS.length}` : 'Aktif'}
+                  {pgIdx >= 0 ? `Tahap ${pgIdx + 1} dari ${progresList.length}` : 'Aktif'}
                 </span>
               </div>
 
               <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-                {PROGRES_STEPS.map((stepName, i) => (
+                {progresList.map((step, i) => (
                   <div key={i} style={{
                     flex: 1,
                     height: 6,
@@ -432,11 +464,7 @@ const ch = supabase.channel(channelId)
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#64748b', fontWeight: 600 }}>
-                <span>Menunggu</span>
-                <span>Ditugaskan</span>
-                <span>Berangkat</span>
-                <span>Tiba</span>
-                <span>Selesai</span>
+                {stepLabels.map((label, i) => <span key={i}>{label}</span>)}
               </div>
             </div>
 

@@ -11,6 +11,91 @@ const T = {
   head:"'Hanken Grotesk', sans-serif", body:"'Inter', sans-serif", mono:"'JetBrains Mono', monospace",
 };
 
+const SECTION_LABEL = { fluida:'Cairan & fluida', rem:'Rem', ban:'Ban', dokumen:'Surat-surat', lain:'Item lain' };
+
+const ITEM_LABEL = {
+  oli_mesin:'Oli mesin', air_radiator:'Air radiator', minyak_rem:'Minyak rem',
+  rem_depan:'Rem depan', rem_belakang:'Rem belakang',
+  stnk:'STNK', kir:'KIR', sim:'SIM driver',
+  lampu_depan:'Lampu depan', lampu_belakang:'Lampu belakang', lampu_sein:'Lampu sein',
+  wiper:'Wiper / kaca', klakson:'Klakson', kebersihan:'Kebersihan kabin',
+  depan_kiri:'Depan kiri', depan_kanan:'Depan kanan',
+  engkel_kiri:'Engkel kiri', engkel_kanan:'Engkel kanan',
+  engkel_kiri_luar:'Engkel kiri luar', engkel_kiri_dalam:'Engkel kiri dalam',
+  engkel_kanan_luar:'Engkel kanan luar', engkel_kanan_dalam:'Engkel kanan dalam',
+  tronton_kiri_luar:'Tronton kiri luar', tronton_kiri_dalam:'Tronton kiri dalam',
+  tronton_kanan_luar:'Tronton kanan luar', tronton_kanan_dalam:'Tronton kanan dalam',
+  ban_stip:'Ban stip',
+};
+
+// 0 = OK/hijau, 1 = perhatian/kuning, 2 = bahaya/merah — sama seperti di P2HPage driver
+const SEV_BADGE = {
+  0: { bg:'#d1fae5', color:'#065f46' },
+  1: { bg:'#fffbeb', color:'#92400e' },
+  2: { bg:'#fee2e2', color:'#7f1d1d' },
+};
+
+// hasil sejak v7 nested per section ({fluida:{...}, rem:{...}, ...}); baris P2H
+// sebelum v7 masih flat ({key: 'ok'|'tidak_ok'}). Fungsi ini membedakan keduanya.
+function isNestedHasil(hasil) {
+  if (!hasil || typeof hasil !== 'object') return false;
+  return ['fluida', 'rem', 'ban', 'dokumen', 'lain'].some(k => hasil[k] && typeof hasil[k] === 'object');
+}
+
+function HasilBreakdown({ hasil }) {
+  if (!hasil || Object.keys(hasil).length === 0) return null;
+
+  if (!isNestedHasil(hasil)) {
+    // Format lama (P2H sebelum v7): flat {key: 'ok'|'tidak_ok'}
+    return (
+      <div style={{ marginTop:12 }}>
+        <p style={{ fontSize:11, color:'#74777f', fontWeight:700, textTransform:'uppercase', marginBottom:8 }}>Checklist (format lama)</p>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:6 }}>
+          {Object.entries(hasil).map(([k, v]) => {
+            const ok = v === 'ok';
+            const c = ok ? SEV_BADGE[0] : SEV_BADGE[2];
+            return (
+              <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:11, padding:'6px 8px', border:'1px solid #ebeced', borderRadius:6 }}>
+                <span style={{ color:'#44474e' }}>{ITEM_LABEL[k] || k}</span>
+                <span style={{ background:c.bg, color:c.color, padding:'1px 8px', borderRadius:12, fontWeight:700 }}>{ok ? 'OK' : 'NOK'}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginTop:12 }}>
+      {['fluida', 'rem', 'ban', 'dokumen', 'lain'].map(secId => {
+        const items = hasil[secId];
+        if (!items || Object.keys(items).length === 0) return null;
+        return (
+          <div key={secId} style={{ marginBottom:10 }}>
+            <p style={{ fontSize:11, color:'#74777f', fontWeight:700, textTransform:'uppercase', marginBottom:6 }}>{SECTION_LABEL[secId] || secId}</p>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:6 }}>
+              {Object.entries(items).map(([key, data]) => {
+                const label = ITEM_LABEL[key] || key;
+                const valLabel = data?.label || data?.value || '—';
+                const c = secId === 'dokumen'
+                  ? (data?.value === 'ada' ? SEV_BADGE[0] : SEV_BADGE[2])
+                  : (SEV_BADGE[data?.severity] ?? SEV_BADGE[0]);
+                return (
+                  <div key={key} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:11, padding:'6px 8px', border:'1px solid #ebeced', borderRadius:6 }}>
+                    <span style={{ color:'#44474e' }}>{label}</span>
+                    <span style={{ background:c.bg, color:c.color, padding:'1px 8px', borderRadius:12, fontWeight:700 }}>{valLabel}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function P2HPage() {
   const [list, setList]     = useState([]);
   const [loading, setLoad]  = useState(true);
@@ -37,11 +122,17 @@ export default function P2HPage() {
     setLoad(false);
   }
 
-  const sudah  = list.filter(p => p.status !== 'BELUM').length;
-  const belum  = list.filter(p => p.status === 'BELUM').length;
-  const nLayak = list.filter(p => p.status === 'TIDAK LAYAK').length;
+  const sudah    = list.filter(p => p.status !== 'BELUM').length;
+  const belum    = list.filter(p => p.status === 'BELUM').length;
+  const nTidak   = list.filter(p => p.status === 'TIDAK LAYAK').length;
+  const nCatatan = list.filter(p => p.status === 'LAYAK DENGAN CATATAN').length;
 
-  const statusColor = { 'LAYAK':{ bg:'#d1fae5', color:'#065f46' }, 'TIDAK LAYAK':{ bg:'#fee2e2', color:'#7f1d1d' }, 'BELUM':{ bg:'#f3f4f6', color:'#374151' } };
+  const statusColor = {
+    'LAYAK':                { bg:'#d1fae5', color:'#065f46' },
+    'LAYAK DENGAN CATATAN': { bg:'#fffbeb', color:'#92400e' },
+    'TIDAK LAYAK':          { bg:'#fee2e2', color:'#7f1d1d' },
+    'BELUM':                { bg:'#f3f4f6', color:'#374151' },
+  };
 
   if (loading) return <div style={{ padding:40, textAlign:'center', color:'#74777f', fontFamily:T.body }}>Memuat...</div>;
 
@@ -68,9 +159,14 @@ export default function P2HPage() {
           ⚠ {belum} unit belum P2H hari ini
         </div>
       )}
-      {nLayak > 0 && (
+      {nTidak > 0 && (
+        <div style={{ background:'#fee2e2', border:'1px solid #fca5a5', borderRadius:8, padding:'10px 14px', marginBottom:12, fontSize:12, color:'#7f1d1d', fontWeight:600 }}>
+          ⛔ {nTidak} unit dinyatakan TIDAK LAYAK
+        </div>
+      )}
+      {nCatatan > 0 && (
         <div style={{ background:'#fffbeb', border:'1px solid #fcd34d', borderRadius:8, padding:'10px 14px', marginBottom:12, fontSize:12, color:'#92400e', fontWeight:600 }}>
-          ⚠ {nLayak} unit dinyatakan TIDAK LAYAK
+          ⚠ {nCatatan} unit LAYAK DENGAN CATATAN — perlu ditindaklanjuti / ditelepon
         </div>
       )}
 
@@ -132,18 +228,7 @@ export default function P2HPage() {
               <div><p style={{ color:'#74777f', marginBottom:2 }}>Tanggal</p><p style={{ fontWeight:700 }}>{detail.tanggal}</p></div>
             </div>
             {detail.catatan && <div style={{ marginTop:12, background:T.bg, borderRadius:8, padding:10, fontSize:12, color:'#44474e' }}>{detail.catatan}</div>}
-            {detail.foto_urls?.length > 0 && (
-              <div style={{ marginTop:12 }}>
-                <p style={{ fontSize:11, color:'#74777f', fontWeight:700, textTransform:'uppercase', marginBottom:8 }}>Foto P2H</p>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
-                  {detail.foto_urls.map((url, i) => (
-                    <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                      <img src={url} alt={`Foto ${i+1}`} style={{ width:'100%', aspectRatio:1, objectFit:'cover', borderRadius:8, border:`1px solid ${T.border}` }}/>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
+            <HasilBreakdown hasil={detail.hasil} />
           </div>
         </div>
       )}
