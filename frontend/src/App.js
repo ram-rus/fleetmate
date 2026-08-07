@@ -32,9 +32,10 @@ const HOME_ROUTE = APP_MODE === 'driver' ? '/driver/login' : '/login';
 // ─── Loading screen ───────────────────────────────────────
 function Loading() {
   return (
-    <div style={{ minHeight:'100vh', background:'#1a2b4b', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, fontFamily:'Montserrat,sans-serif' }}>
-      <div style={{ width:48, height:48, border:'4px solid rgba(255,255,255,0.2)', borderTop:'4px solid #fff', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
-      <p style={{ color:'rgba(255,255,255,0.6)', fontSize:13, fontWeight:600 }}>Memuat FleetMate...</p>
+    <div style={{ minHeight:'100vh', background:'#f8f9fa', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:18, fontFamily:'Montserrat,sans-serif' }}>
+      <img src="/icons/icon-192.png" alt="FleetMate" style={{ width:88, height:88, objectFit:'contain' }}/>
+      <div aria-label="Memuat" style={{ width:32, height:32, border:'3px solid rgba(26,43,75,0.16)', borderTop:'3px solid #1a2b4b', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+      <p style={{ color:'#596579', fontSize:13, fontWeight:600 }}>Memuat FleetMate...</p>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
