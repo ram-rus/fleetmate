@@ -71,19 +71,13 @@ export default function AdminLayout({ children }) {
         <div style={{ padding:'20px 16px 16px', borderBottom:`1px solid ${C.sidebarBdr}` }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             {/* Logo box — abu gelap kecil seperti di gambar */}
-            <div style={{
-              width:32, height:32, background:'#1F2937', borderRadius:6,
-              display:'flex', alignItems:'center', justifyContent:'center',
-              flexShrink:0,
-            }}>
-              <span style={{ fontSize:14, color:'#fff' }}>FM</span>
-            </div>
+            <img src="/logo.png" alt="MMS FleetCare" style={{ width:32, height:32, objectFit:'contain', flexShrink:0 }}/>
             <div>
               <p style={{ fontSize:13, fontWeight:700, color:C.textPrimary, fontFamily:C.head, lineHeight:1.2 }}>
-                FleetMate
+                MMS FleetCare
               </p>
               <p style={{ fontSize:9, fontWeight:600, color:C.labelTx, letterSpacing:'0.08em', textTransform:'uppercase' }}>
-                Operational Intel
+                P2H & Perbaikan
               </p>
             </div>
           </div>

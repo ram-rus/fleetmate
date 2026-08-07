@@ -69,7 +69,7 @@ export default function LoginPage() {
         <div style={{ textAlign:'center', marginBottom:32 }}>
           <div style={{
             width:64, height:64, background:'rgba(255,255,255,0.1)',
-            borderRadius:16, display:'inline-flex', alignItems:'center',
+            borderRadius:16, display:'none', alignItems:'center',
             justifyContent:'center', marginBottom:12,
           }}>
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
@@ -78,8 +78,9 @@ export default function LoginPage() {
               <circle cx="18.5" cy="18.5" r="2.5"/>
             </svg>
           </div>
-          <h1 style={{ color:'#fff', fontSize:24, fontWeight:800, margin:0 }}>FleetMate</h1>
-          <p style={{ color:'rgba(255,255,255,0.5)', fontSize:13, margin:'4px 0 0' }}>PT. MMS Fleet Management</p>
+          <img src="/logo.png" alt="MMS FleetCare" style={{ width:64, height:64, objectFit:'contain', marginBottom:12 }}/>
+          <h1 style={{ color:'#fff', fontSize:24, fontWeight:800, margin:0 }}>MMS FleetCare</h1>
+          <p style={{ color:'rgba(255,255,255,0.5)', fontSize:13, margin:'4px 0 0' }}>P2H & Perbaikan Driver</p>
         </div>
 
         {/* Card */}
@@ -190,7 +191,7 @@ export default function LoginPage() {
         </div>
 
         <p style={{ textAlign:'center', color:'rgba(255,255,255,0.2)', fontSize:11, marginTop:20 }}>
-          FleetMate v2.0 © 2025 PT. MMS
+          MMS FleetCare © 2025 PT. MMS
         </p>
       </div>
     </div>

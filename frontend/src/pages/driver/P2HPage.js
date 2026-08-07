@@ -1,5 +1,5 @@
 // src/pages/driver/P2HPage.js — v7
-// Checklist P2H per section (fluida, rem, ban, dokumen, lain)
+// Checklist P2H per section (fluida, rem, ban, dokumen, APD/perlengkapan, lain)
 // Severity 3 tingkat: OK / PERHATIAN / BAHAYA -> LAYAK / LAYAK DENGAN CATATAN / TIDAK LAYAK
 // Ban dinamis mengikuti units.tipe (Wing Box / CDD / CDE) berdasarkan driver.unit_id
 import React, { useState, useEffect, useMemo } from 'react';
@@ -100,6 +100,14 @@ const DOKUMEN_OPTS = [
   { value: 'kadaluarsa', label: 'Kadaluarsa' },
 ];
 
+// APD dan perlengkapan hanya untuk mengetahui ketersediaan di unit.
+// Seperti surat-surat, pilihan ini tidak memengaruhi status layak P2H.
+const APD_PERLENGKAPAN_OPTS = [
+  { value: 'ada',       label: 'Ada' },
+  { value: 'rusak',     label: 'Rusak' },
+  { value: 'tidak_ada', label: 'Tidak ada' },
+];
+
 // Item kritis (lampu depan): NOK langsung BAHAYA, konsisten dengan aturan bisnis lama.
 const OK_OPTS_KRITIS = [
   { value: 'ok',  label: 'OK',  severity: SEV.OK },
@@ -139,6 +147,20 @@ function buildSections(banKeys) {
         { key: 'stnk', label: 'STNK',        opts: DOKUMEN_OPTS },
         { key: 'kir',  label: 'KIR',         opts: DOKUMEN_OPTS },
         { key: 'sim',  label: 'SIM driver',  opts: DOKUMEN_OPTS },
+      ],
+    },
+    {
+      id: 'apd_perlengkapan', title: 'APD dan Perlengkapan', catatanOnly: true,
+      items: [
+        { key: 'rompi_safety',      label: 'Rompi safety',      opts: APD_PERLENGKAPAN_OPTS },
+        { key: 'helm_safety',       label: 'Helm safety',       opts: APD_PERLENGKAPAN_OPTS },
+        { key: 'ganjal',            label: 'Ganjal',            opts: APD_PERLENGKAPAN_OPTS },
+        { key: 'seragam_mms',       label: 'Seragam MMS',       opts: APD_PERLENGKAPAN_OPTS },
+        { key: 'dongkrak',          label: 'Dongkrak',          opts: APD_PERLENGKAPAN_OPTS },
+        { key: 'kunci_roda',        label: 'Kunci roda',        opts: APD_PERLENGKAPAN_OPTS },
+        { key: 'apar',              label: 'APAR',              opts: APD_PERLENGKAPAN_OPTS },
+        { key: 'kotak_p3k',         label: 'Kotak P3K',         opts: APD_PERLENGKAPAN_OPTS },
+        { key: 'segitiga_pengaman', label: 'Segitiga pengaman', opts: APD_PERLENGKAPAN_OPTS },
       ],
     },
     {

@@ -36,7 +36,7 @@ registerRoute(
 registerRoute(
   ({ request }) => request.destination === 'image' || request.destination === 'font',
   new StaleWhileRevalidate({
-    cacheName: 'fleetmate-assets',
+    cacheName: 'mms-fleetcare-assets',
     plugins: [new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 })],
   })
 );
@@ -47,7 +47,7 @@ registerRoute(
 registerRoute(
   ({ url }) => url.hostname.endsWith('.supabase.co'),
   new NetworkFirst({
-    cacheName: 'fleetmate-api',
+    cacheName: 'mms-fleetcare-api',
     networkTimeoutSeconds: 8,
     plugins: [new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 5 * 60 })],
   })

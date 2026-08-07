@@ -1,7 +1,7 @@
 {
-  "short_name": "FleetMate",
-  "name": "FleetMate — Portal Driver PT. MMS",
-  "description": "Portal driver untuk P2H digital, lapor kerusakan, dan histori unit",
+  "short_name": "MMS FleetCare",
+  "name": "MMS FleetCare — P2H & Perbaikan Driver",
+  "description": "Aplikasi P2H digital dan permintaan perbaikan untuk driver PT. MMS",
   "icons": [
     {
       "src": "icons/icon-192.png",

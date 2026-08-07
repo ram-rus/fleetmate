@@ -71,12 +71,13 @@ export default function InstallPrompt() {
       padding: '14px 14px 14px 16px', display: 'flex', alignItems: 'center', gap: 12,
       boxShadow: '0 8px 24px rgba(0,0,0,0.25)', fontFamily: 'Montserrat, sans-serif',
     }}>
-      <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+      <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.12)', display: 'none', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
         🚛
       </div>
 
+      <img src="/logo.png" alt="MMS FleetCare" style={{ width:40, height:40, objectFit:'contain', flexShrink:0 }}/>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>Install FleetMate</p>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>Install MMS FleetCare</p>
         <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.7)', lineHeight: 1.4 }}>
           {platform === 'ios'
             ? <>Tap tombol Share <span style={{ fontWeight: 700 }}>⎋</span> lalu pilih "Add to Home Screen"</>

@@ -21,7 +21,7 @@ export function register(config) {
       if (isLocalhost) {
         checkValidServiceWorker(swUrl, config);
         navigator.serviceWorker.ready.then(() => {
-          console.log('FleetMate berjalan dalam mode offline-ready (localhost).');
+          console.log('MMS FleetCare berjalan dalam mode offline-ready (localhost).');
         });
       } else {
         registerValidSW(swUrl, config);
@@ -41,10 +41,10 @@ function registerValidSW(swUrl, config) {
           if (installingWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
               // Versi baru sudah siap di-cache, tapi tab lama masih pakai versi sebelumnya.
-              console.log('Update FleetMate tersedia — akan aktif saat semua tab ditutup/reload.');
+              console.log('Update MMS FleetCare tersedia — akan aktif saat semua tab ditutup/reload.');
               if (config && config.onUpdate) config.onUpdate(registration);
             } else {
-              console.log('FleetMate siap dipakai offline.');
+              console.log('MMS FleetCare siap dipakai offline.');
               if (config && config.onSuccess) config.onSuccess(registration);
             }
           }
@@ -72,7 +72,7 @@ function checkValidServiceWorker(swUrl, config) {
       }
     })
     .catch(() => {
-      console.log('Tidak ada koneksi internet. FleetMate berjalan dalam mode offline.');
+      console.log('Tidak ada koneksi internet. MMS FleetCare berjalan dalam mode offline.');
     });
 }
 

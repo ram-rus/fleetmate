@@ -172,10 +172,11 @@ export default function DriverLoginPage() {
 
       <div style={{ textAlign:'center', marginBottom:28, marginTop:20 }}>
         <div style={{ width:56, height:56, background:T.navy, borderRadius:14,
-          display:'flex', alignItems:'center', justifyContent:'center', fontSize:26,
+          display:'none', alignItems:'center', justifyContent:'center', fontSize:26,
           margin:'0 auto 12px' }}>🚛</div>
-        <h1 style={{ fontSize:20, fontWeight:700, fontFamily:T.head, color:T.text }}>FleetMate</h1>
-        <p style={{ fontSize:12, color:T.textDim }}>PT. MMS — Portal Driver</p>
+        <img src="/logo.png" alt="MMS FleetCare" style={{ width:56, height:56, objectFit:'contain', margin:'0 auto 12px' }}/>
+        <h1 style={{ fontSize:20, fontWeight:700, fontFamily:T.head, color:T.text }}>MMS FleetCare</h1>
+        <p style={{ fontSize:12, color:T.textDim }}>P2H & Perbaikan Driver</p>
       </div>
 
       <div style={{ width:'100%', maxWidth:420 }}>

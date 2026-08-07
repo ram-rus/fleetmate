@@ -33,9 +33,9 @@ const HOME_ROUTE = APP_MODE === 'driver' ? '/driver/login' : '/login';
 function Loading() {
   return (
     <div style={{ minHeight:'100vh', background:'#f8f9fa', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:18, fontFamily:'Montserrat,sans-serif' }}>
-      <img src="/icons/icon-192.png" alt="FleetMate" style={{ width:88, height:88, objectFit:'contain' }}/>
+      <img src="/logo.png" alt="MMS FleetCare" style={{ width:88, height:88, objectFit:'contain' }}/>
       <div aria-label="Memuat" style={{ width:32, height:32, border:'3px solid rgba(26,43,75,0.16)', borderTop:'3px solid #1a2b4b', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
-      <p style={{ color:'#596579', fontSize:13, fontWeight:600 }}>Memuat FleetMate...</p>
+      <p style={{ color:'#596579', fontSize:13, fontWeight:600 }}>Memuat MMS FleetCare...</p>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );

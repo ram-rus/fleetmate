@@ -11,12 +11,14 @@ const T = {
   head:"'Hanken Grotesk', sans-serif", body:"'Inter', sans-serif", mono:"'JetBrains Mono', monospace",
 };
 
-const SECTION_LABEL = { fluida:'Cairan & fluida', rem:'Rem', ban:'Ban', dokumen:'Surat-surat', lain:'Item lain' };
+const SECTION_LABEL = { fluida:'Cairan & fluida', rem:'Rem', ban:'Ban', dokumen:'Surat-surat', apd_perlengkapan:'APD dan Perlengkapan', lain:'Item lain' };
 
 const ITEM_LABEL = {
   oli_mesin:'Oli mesin', air_radiator:'Air radiator', minyak_rem:'Minyak rem',
   rem_depan:'Rem depan', rem_belakang:'Rem belakang',
   stnk:'STNK', kir:'KIR', sim:'SIM driver',
+  rompi_safety:'Rompi safety', helm_safety:'Helm safety', ganjal:'Ganjal', seragam_mms:'Seragam MMS',
+  dongkrak:'Dongkrak', kunci_roda:'Kunci roda', apar:'APAR', kotak_p3k:'Kotak P3K', segitiga_pengaman:'Segitiga pengaman',
   lampu_depan:'Lampu depan', lampu_belakang:'Lampu belakang', lampu_sein:'Lampu sein',
   wiper:'Wiper / kaca', klakson:'Klakson', kebersihan:'Kebersihan kabin',
   depan_kiri:'Depan kiri', depan_kanan:'Depan kanan',
@@ -39,14 +41,14 @@ const SEV_BADGE = {
 // sebelum v7 masih flat ({key: 'ok'|'tidak_ok'}). Fungsi ini membedakan keduanya.
 function isNestedHasil(hasil) {
   if (!hasil || typeof hasil !== 'object') return false;
-  return ['fluida', 'rem', 'ban', 'dokumen', 'lain'].some(k => hasil[k] && typeof hasil[k] === 'object');
+  return ['fluida', 'rem', 'ban', 'dokumen', 'apd_perlengkapan', 'lain'].some(k => hasil[k] && typeof hasil[k] === 'object');
 }
 
 // Fallback label kalau ketemu data lama yang isinya string mentah, bukan object {value,label,severity}
 const VALUE_LABEL = {
   normal:'Normal', berkurang:'Berkurang', kritis:'Kritis', kosong:'Kosong',
   kurang:'Kurang', bocor:'Bocor', gundul:'Gundul',
-  ada:'Ada', tidak_ada:'Tidak ada', kadaluarsa:'Kadaluarsa',
+  ada:'Ada', rusak:'Rusak', tidak_ada:'Tidak ada', kadaluarsa:'Kadaluarsa',
   ok:'OK', nok:'NOK',
 };
 const NETRAL_BADGE = { bg:'#f1f0ea', color:'#5f5e5a' }; // dipakai saat severity data lama tidak diketahui
@@ -77,7 +79,7 @@ function HasilBreakdown({ hasil }) {
 
   return (
     <div style={{ marginTop:12 }}>
-      {['fluida', 'rem', 'ban', 'dokumen', 'lain'].map(secId => {
+      {['fluida', 'rem', 'ban', 'dokumen', 'apd_perlengkapan', 'lain'].map(secId => {
         const items = hasil[secId];
         if (!items || Object.keys(items).length === 0) return null;
         return (
@@ -89,7 +91,7 @@ function HasilBreakdown({ hasil }) {
                 const isObj = raw && typeof raw === 'object';
                 const rawValue = isObj ? raw.value : raw;
                 const valLabel = isObj ? (raw.label || raw.value || '—') : (VALUE_LABEL[raw] || raw || '—');
-                const c = secId === 'dokumen'
+                const c = secId === 'dokumen' || secId === 'apd_perlengkapan'
                   ? (rawValue === 'ada' ? SEV_BADGE[0] : SEV_BADGE[2])
                   : isObj
                     ? (SEV_BADGE[raw.severity] ?? SEV_BADGE[0])
