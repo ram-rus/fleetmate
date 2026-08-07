@@ -1,6 +1,7 @@
 // src/components/layout/DriverLayout.js
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import InstallPrompt from '../InstallPrompt';
 
 const NAV = [
   { to:'/driver',           label:'Home',         icon:'🏠', exact:true },
@@ -58,6 +59,8 @@ export default function DriverLayout({ children, title, back }) {
           </NavLink>
         ))}
       </nav>
+
+      <InstallPrompt />
     </div>
   );
 }
