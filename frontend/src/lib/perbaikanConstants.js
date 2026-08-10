@@ -9,9 +9,12 @@ export const PERBAIKAN_SELECT = `
 `;
 
 // ── Klasifikasi tipe: mana yang masuk Storing vs Perbaikan ─
-// Storing  : storing_internal, storing_luar, bengkel_luar
+// Storing  : storing_internal, storing_luar, bengkel_luar, pulang_ke_pool
 // Perbaikan: perbaikan_pool
-export const TIPE_STORING    = ['storing_internal','storing_luar','bengkel_luar'];
+// Catatan: pulang_ke_pool sebelumnya TIDAK masuk ke daftar manapun — akibatnya
+// unit dengan tipe ini tidak pernah dihitung sebagai "sibuk" di Overview, dan
+// bisa salah tampil sebagai "Sedang Jalan" padahal sedang menuju pool.
+export const TIPE_STORING    = ['storing_internal','storing_luar','bengkel_luar','pulang_ke_pool'];
 export const TIPE_PERBAIKAN  = ['perbaikan_pool'];
 
 export function isStoring(tipe)   { return TIPE_STORING.includes(tipe); }
