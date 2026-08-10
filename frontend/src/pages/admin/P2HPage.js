@@ -17,7 +17,7 @@ const ITEM_LABEL = {
   oli_mesin:'Oli mesin', air_radiator:'Air radiator', minyak_rem:'Minyak rem',
   rem_depan:'Rem depan', rem_belakang:'Rem belakang',
   stnk:'STNK', kir:'KIR', sim:'SIM driver',
-  rompi_safety:'Rompi safety', helm_safety:'Helm safety', ganjal:'Ganjal', seragam_mms:'Seragam MMS',
+  rompi_safety:'Rompi safety', helm_safety:'Helm safety', ganjal:'Ganjal', ganjal_1:'Ganjal 1', ganjal_2:'Ganjal 2', seragam_mms:'Seragam MMS',
   dongkrak:'Dongkrak', kunci_roda:'Kunci roda', apar:'APAR', kotak_p3k:'Kotak P3K', segitiga_pengaman:'Segitiga pengaman',
   lampu_depan:'Lampu depan', lampu_belakang:'Lampu belakang', lampu_sein:'Lampu sein',
   wiper:'Wiper / kaca', klakson:'Klakson', kebersihan:'Kebersihan kabin',

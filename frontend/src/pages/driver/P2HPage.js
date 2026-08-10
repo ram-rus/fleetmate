@@ -154,7 +154,8 @@ function buildSections(banKeys) {
       items: [
         { key: 'rompi_safety',      label: 'Rompi safety',      opts: APD_PERLENGKAPAN_OPTS },
         { key: 'helm_safety',       label: 'Helm safety',       opts: APD_PERLENGKAPAN_OPTS },
-        { key: 'ganjal',            label: 'Ganjal',            opts: APD_PERLENGKAPAN_OPTS },
+        { key: 'ganjal_1',          label: 'Ganjal 1',          opts: APD_PERLENGKAPAN_OPTS },
+        { key: 'ganjal_2',          label: 'Ganjal 2',          opts: APD_PERLENGKAPAN_OPTS },
         { key: 'seragam_mms',       label: 'Seragam MMS',       opts: APD_PERLENGKAPAN_OPTS },
         { key: 'dongkrak',          label: 'Dongkrak',          opts: APD_PERLENGKAPAN_OPTS },
         { key: 'kunci_roda',        label: 'Kunci roda',        opts: APD_PERLENGKAPAN_OPTS },
