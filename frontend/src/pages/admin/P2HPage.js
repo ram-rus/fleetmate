@@ -392,11 +392,12 @@ export default function P2HPage() {
       {/* Modal Detail */}
       {detail && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:50, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
-          <div style={{ background:'#fff', borderRadius:12, padding:20, width:'100%', maxWidth:400 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:16 }}>
+          <div style={{ background:'#fff', borderRadius:12, width:'100%', maxWidth:400, maxHeight:'calc(100vh - 32px)', overflowY:'auto' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16, padding:'20px 20px 16px', position:'sticky', top:0, zIndex:1, background:'#fff', borderBottom:`1px solid ${T.border}` }}>
               <h3 style={{ fontSize:14, fontWeight:700 }}>Detail P2H — {detail.unit?.nopol}</h3>
               <button onClick={() => setDetail(null)} style={{ background:'none', border:'none', fontSize:18, cursor:'pointer', color:'#74777f' }}>×</button>
             </div>
+            <div style={{ padding:'0 20px 20px' }}>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, fontSize:12 }}>
               <div><p style={{ color:'#74777f', marginBottom:2 }}>Driver</p><p style={{ fontWeight:700 }}>{detail.driver?.nama}</p></div>
               <div><p style={{ color:'#74777f', marginBottom:2 }}>Status</p>
@@ -407,6 +408,7 @@ export default function P2HPage() {
             </div>
             {detail.catatan && <div style={{ marginTop:12, background:T.bg, borderRadius:8, padding:10, fontSize:12, color:'#44474e' }}>{detail.catatan}</div>}
             <HasilBreakdown hasil={detail.hasil} />
+            </div>
           </div>
         </div>
       )}
