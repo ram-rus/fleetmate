@@ -1,5 +1,6 @@
 // src/pages/admin/P2HPage.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
 import { attachDriverInfo } from '../../lib/driverHelper';
 
@@ -52,6 +53,25 @@ const VALUE_LABEL = {
   ok:'OK', nok:'NOK',
 };
 const NETRAL_BADGE = { bg:'#f1f0ea', color:'#5f5e5a' }; // dipakai saat severity data lama tidak diketahui
+
+function checklistToExport(hasil) {
+  if (!hasil || typeof hasil !== 'object') return {};
+  const out = {};
+  if (!isNestedHasil(hasil)) {
+    Object.entries(hasil).forEach(([key, value]) => {
+      out[ITEM_LABEL[key] || key] = VALUE_LABEL[value] || value || '';
+    });
+    return out;
+  }
+  Object.entries(hasil).forEach(([section, items]) => {
+    if (!items || typeof items !== 'object') return;
+    Object.entries(items).forEach(([key, raw]) => {
+      const value = raw && typeof raw === 'object' ? (raw.label || raw.value) : raw;
+      out[`${SECTION_LABEL[section] || section} - ${ITEM_LABEL[key] || key}`] = value || '';
+    });
+  });
+  return out;
+}
 
 function HasilBreakdown({ hasil }) {
   if (!hasil || Object.keys(hasil).length === 0) return null;
@@ -115,6 +135,14 @@ export default function P2HPage() {
   const [list, setList]     = useState([]);
   const [loading, setLoad]  = useState(true);
   const [detail, setDetail] = useState(null);
+  const [activeTab, setActiveTab] = useState('rekap');
+  const [reportRows, setReportRows] = useState([]);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportStart, setReportStart] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0,10));
+  const [reportEnd, setReportEnd] = useState(() => new Date().toISOString().slice(0,10));
+  const [reportUnit, setReportUnit] = useState('');
+  const [reportDriver, setReportDriver] = useState('');
+  const [reportStatus, setReportStatus] = useState('');
 
   const today = new Date().toISOString().slice(0,10);
 
@@ -126,6 +154,10 @@ export default function P2HPage() {
     return () => supabase.removeChannel(ch);
   }, []);
 
+  useEffect(() => {
+    if (activeTab === 'laporan') loadReport();
+  }, [activeTab, reportStart, reportEnd]);
+
   async function load() {
     const { data } = await supabase
       .from('p2h')
@@ -135,6 +167,58 @@ export default function P2HPage() {
     const withDriver = await attachDriverInfo(data || [], 'driver_id');
     setList(withDriver);
     setLoad(false);
+  }
+
+  async function loadReport() {
+    setReportLoading(true);
+    const { data } = await supabase
+      .from('p2h')
+      .select('*, unit:units(nopol,tipe)')
+      .gte('tanggal', reportStart)
+      .lte('tanggal', reportEnd)
+      .order('tanggal', { ascending:false })
+      .order('created_at', { ascending:false });
+    const withDriver = await attachDriverInfo(data || [], 'driver_id');
+    setReportRows(withDriver);
+    setReportLoading(false);
+  }
+
+  const reportUnits = useMemo(() => [...new Set(reportRows.map(row => row.unit?.nopol).filter(Boolean))].sort(), [reportRows]);
+  const reportDrivers = useMemo(() => [...new Set(reportRows.map(row => row.driver?.nama).filter(Boolean))].sort(), [reportRows]);
+  const filteredReport = useMemo(() => reportRows.filter(row =>
+    (!reportUnit || row.unit?.nopol === reportUnit) &&
+    (!reportDriver || row.driver?.nama === reportDriver) &&
+    (!reportStatus || row.status === reportStatus)
+  ), [reportRows, reportUnit, reportDriver, reportStatus]);
+
+  function exportReport() {
+    if (!filteredReport.length) return;
+    const rows = filteredReport.map(row => ({
+      Tanggal: row.tanggal,
+      Waktu: row.created_at ? new Date(row.created_at).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) : '',
+      'No. Polisi': row.unit?.nopol || '',
+      'Tipe Unit': row.unit?.tipe || '',
+      Driver: row.driver?.nama || '',
+      Status: row.status || '',
+      'KM Saat P2H': row.km_saat_p2h ?? '',
+      Catatan: row.catatan || '',
+      ...checklistToExport(row.hasil),
+    }));
+    const reportSheet = XLSX.utils.json_to_sheet(rows);
+    reportSheet['!cols'] = Object.keys(rows[0]).map(key => ({ wch: Math.min(Math.max(key.length + 2, 14), 32) }));
+    const summarySheet = XLSX.utils.aoa_to_sheet([
+      ['Laporan P2H - MMS FleetCare'],
+      ['Periode', `${reportStart} s.d. ${reportEnd}`],
+      ['Jumlah data', filteredReport.length],
+      ['Layak', filteredReport.filter(row => row.status === 'LAYAK').length],
+      ['Layak dengan catatan', filteredReport.filter(row => row.status === 'LAYAK DENGAN CATATAN').length],
+      ['Tidak layak', filteredReport.filter(row => row.status === 'TIDAK LAYAK').length],
+    ]);
+    summarySheet['!cols'] = [{ wch:26 }, { wch:30 }];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Ringkasan');
+    XLSX.utils.book_append_sheet(workbook, reportSheet, 'Laporan P2H');
+    XLSX.writeFile(workbook, `laporan-p2h-${reportStart}-${reportEnd}.xlsx`);
   }
 
   const sudah    = list.filter(p => p.status !== 'BELUM').length;
@@ -156,6 +240,19 @@ export default function P2HPage() {
       <h2 style={{ fontSize:18, fontWeight:700, marginBottom:4 }}>Manajemen P2H</h2>
       <p style={{ fontSize:11, color:'#74777f', marginBottom:16 }}>Rekap harian · {new Date().toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' })}</p>
 
+      <div style={{ display:'flex', gap:8, marginBottom:16, borderBottom:`1px solid ${T.border}` }}>
+        {[
+          { id:'rekap', label:'Rekap Hari Ini' },
+          { id:'laporan', label:'Laporan P2H' },
+        ].map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            style={{ background:'none', border:'none', borderBottom:activeTab===tab.id?`2px solid ${T.blue}`:'2px solid transparent', color:activeTab===tab.id?T.blue:T.textDim, padding:'8px 10px', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:T.body }}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'rekap' && <>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:16 }}>
         {[
           { label:'Total Terjadwal', val:list.length,  color:T.navy },
@@ -225,6 +322,72 @@ export default function P2HPage() {
           </tbody>
         </table>
       </div>
+
+      </>}
+
+      {activeTab === 'laporan' && (
+        <div>
+          <div style={{ background:'#fff', border:`1px solid ${T.border}`, borderRadius:8, padding:16, marginBottom:16 }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:14 }}>
+              <div>
+                <h3 style={{ fontSize:14, fontWeight:700, color:T.text, marginBottom:3 }}>Laporan P2H</h3>
+                <p style={{ fontSize:11, color:T.textDim }}>Filter hasil P2H lalu unduh dalam format Excel.</p>
+              </div>
+              <button onClick={exportReport} disabled={!filteredReport.length}
+                style={{ background:filteredReport.length?T.green:'#9CA3AF', color:'#fff', border:'none', borderRadius:7, padding:'9px 12px', fontSize:12, fontWeight:700, cursor:filteredReport.length?'pointer':'not-allowed', fontFamily:T.body, whiteSpace:'nowrap' }}>
+                Export Excel
+              </button>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(5, minmax(0, 1fr))', gap:10 }}>
+              <label style={{ fontSize:10, color:T.textDim, fontWeight:700 }}>TANGGAL MULAI
+                <input type="date" value={reportStart} max={reportEnd} onChange={e => setReportStart(e.target.value)} style={{ width:'100%', marginTop:5, border:`1px solid ${T.border}`, borderRadius:6, padding:'7px 8px', fontFamily:T.body, fontSize:12 }}/>
+              </label>
+              <label style={{ fontSize:10, color:T.textDim, fontWeight:700 }}>TANGGAL SELESAI
+                <input type="date" value={reportEnd} min={reportStart} max={today} onChange={e => setReportEnd(e.target.value)} style={{ width:'100%', marginTop:5, border:`1px solid ${T.border}`, borderRadius:6, padding:'7px 8px', fontFamily:T.body, fontSize:12 }}/>
+              </label>
+              <label style={{ fontSize:10, color:T.textDim, fontWeight:700 }}>UNIT
+                <select value={reportUnit} onChange={e => setReportUnit(e.target.value)} style={{ width:'100%', marginTop:5, border:`1px solid ${T.border}`, borderRadius:6, padding:'7px 8px', background:'#fff', fontFamily:T.body, fontSize:12 }}>
+                  <option value="">Semua unit</option>{reportUnits.map(unit => <option key={unit} value={unit}>{unit}</option>)}
+                </select>
+              </label>
+              <label style={{ fontSize:10, color:T.textDim, fontWeight:700 }}>DRIVER
+                <select value={reportDriver} onChange={e => setReportDriver(e.target.value)} style={{ width:'100%', marginTop:5, border:`1px solid ${T.border}`, borderRadius:6, padding:'7px 8px', background:'#fff', fontFamily:T.body, fontSize:12 }}>
+                  <option value="">Semua driver</option>{reportDrivers.map(driver => <option key={driver} value={driver}>{driver}</option>)}
+                </select>
+              </label>
+              <label style={{ fontSize:10, color:T.textDim, fontWeight:700 }}>STATUS
+                <select value={reportStatus} onChange={e => setReportStatus(e.target.value)} style={{ width:'100%', marginTop:5, border:`1px solid ${T.border}`, borderRadius:6, padding:'7px 8px', background:'#fff', fontFamily:T.body, fontSize:12 }}>
+                  <option value="">Semua status</option><option value="LAYAK">Layak</option><option value="LAYAK DENGAN CATATAN">Layak dengan catatan</option><option value="TIDAK LAYAK">Tidak layak</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div style={{ background:'#fff', border:`1px solid ${T.border}`, borderRadius:8, overflow:'hidden' }}>
+            <div style={{ padding:'10px 14px', borderBottom:`1px solid ${T.border}`, fontSize:12, color:T.textDim }}>
+              {reportLoading ? 'Memuat laporan...' : `${filteredReport.length} data P2H ditemukan`}
+            </div>
+            <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+              <thead><tr style={{ background:T.bg, borderBottom:'1px solid #ebeced' }}>
+                {['Tanggal','No Pol','Driver','Status','KM','Aksi'].map(h => <th key={h} style={{ textAlign:'left', padding:'10px 14px', fontSize:10, fontWeight:700, color:'#74777f', textTransform:'uppercase', letterSpacing:'0.05em' }}>{h}</th>)}
+              </tr></thead>
+              <tbody>
+                {!reportLoading && filteredReport.length === 0 ? <tr><td colSpan={6} style={{ padding:40, textAlign:'center', color:'#c4c7cf' }}>Tidak ada data P2H pada filter ini</td></tr> : filteredReport.map(row => {
+                  const sc = statusColor[row.status] || statusColor.BELUM;
+                  return <tr key={row.id} style={{ borderBottom:'1px solid #f1f2f3' }}>
+                    <td style={{ padding:'10px 14px', color:T.textMid }}>{new Date(`${row.tanggal}T00:00:00`).toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' })}</td>
+                    <td style={{ padding:'10px 14px', fontWeight:700, fontFamily:T.mono }}>{row.unit?.nopol || '—'}</td>
+                    <td style={{ padding:'10px 14px', color:T.textMid }}>{row.driver?.nama || '—'}</td>
+                    <td style={{ padding:'10px 14px' }}><span style={{ background:sc.bg, color:sc.color, padding:'3px 10px', borderRadius:20, fontSize:10, fontWeight:700 }}>{row.status}</span></td>
+                    <td style={{ padding:'10px 14px', color:T.textMid }}>{row.km_saat_p2h?.toLocaleString('id-ID') || '—'}</td>
+                    <td style={{ padding:'10px 14px' }}><button onClick={() => setDetail(row)} style={{ background:'none', border:'1px solid #c4c7cf', borderRadius:6, padding:'3px 10px', fontSize:11, cursor:'pointer', color:T.navy, fontWeight:600 }}>Detail</button></td>
+                  </tr>;
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Modal Detail */}
       {detail && (
