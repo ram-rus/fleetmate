@@ -179,13 +179,14 @@ export default function KeputusanModal({ laporan, mekaniks, onClose, onDone }) {
             dibuat_oleh:profile?.id,
             sumber:     'driver_app',
             tipe:       'pulang_ke_pool',
-            status:     'Selesai',
-            progres:    'Disetujui',
+            status:     'Menunggu Tiba di Pool',
+            progres:    'Menunggu Tiba di Pool',
             deskripsi:  laporan.deskripsi,
             tgl_mulai:  new Date().toISOString(),
-            tgl_selesai:new Date().toISOString(),
           });
           if (prbErr) throw prbErr;
+
+          await supabase.from('units').update({ status:'Pulang ke Pool' }).eq('id', unitId);
 
           if (driverId) {
             await supabase.from('notifikasi').insert({
@@ -211,13 +212,14 @@ export default function KeputusanModal({ laporan, mekaniks, onClose, onDone }) {
             dibuat_oleh:profile?.id,
             sumber:     'driver_app',
             tipe:       'pulang_ke_pool',
-            status:     'Selesai',
-            progres:    'Disetujui',
+            status:     'Menunggu Tiba di Pool',
+            progres:    'Menunggu Tiba di Pool',
             deskripsi:  laporan.deskripsi,
             tgl_mulai:  new Date().toISOString(),
-            tgl_selesai:new Date().toISOString(),
           });
           if (prbErr) throw prbErr;
+
+          await supabase.from('units').update({ status:'Pulang ke Pool' }).eq('id', unitId);
 
           if (driverId) {
             await supabase.from('notifikasi').insert({

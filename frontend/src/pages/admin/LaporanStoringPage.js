@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 import KeputusanModal from '../../components/admin/KeputusanModal';
 import {
   getTipe, getStatus, getProgres, getProgresIdx, getProgresList,
-  TIPE_STORING, TIPE_PERBAIKAN, ALASAN_STANDBY, PERBAIKAN_SELECT
+  TIPE_STORING, TIPE_PERBAIKAN, TIPE_PULANG_POOL, ALASAN_STANDBY, PERBAIKAN_SELECT
 } from '../../lib/perbaikanConstants';
 import { attachDriverInfo } from '../../lib/driverHelper';
 
@@ -38,6 +38,7 @@ export default function LaporanStoringPage() {
   const [laporan, setLaporan]     = useState([]);
   const [perbaikan, setPerbaikan] = useState([]);
   const [storing, setStoring]     = useState([]);
+  const [pulangPool, setPulangPool] = useState([]);
   const [histori, setHistori]     = useState([]);
   const [standby, setStandby]     = useState([]);
   const [mekaniks, setMekaniks]   = useState([]);
@@ -73,7 +74,7 @@ export default function LaporanStoringPage() {
         .order('created_at', { ascending:false }),
       supabase.from('perbaikan')
         .select(PERBAIKAN_SELECT)
-        .in('status', ['Berjalan','Disetujui'])
+        .in('status', ['Berjalan','Disetujui','Menunggu Tiba di Pool'])
         .order('created_at', { ascending:false }),
       supabase.from('v_standby_aktif').select('*'),
       supabase.from('perbaikan')
@@ -87,6 +88,7 @@ export default function LaporanStoringPage() {
     setLaporan(lapWithDriver);
     setPerbaikan(allAktif.filter(p => TIPE_PERBAIKAN.includes(p.tipe)));
     setStoring(  allAktif.filter(p => TIPE_STORING.includes(p.tipe)));
+    setPulangPool(allAktif.filter(p => TIPE_PULANG_POOL.includes(p.tipe)));
     setStandby(  sbRes.data   || []);
     setHistori(  histRes.data || []);
     setLoad(false);
@@ -181,6 +183,25 @@ export default function LaporanStoringPage() {
       toast.error('Gagal: ' + e.message);
       loadData();
     }
+  }
+
+  async function handleTibaPool(prb) {
+    if (!window.confirm(`Konfirmasi ${prb.unit?.nopol || 'kendaraan'} sudah tiba di pool?`)) return;
+    setSaving(true);
+    try {
+      const now = new Date().toISOString();
+      const { error } = await supabase.from('perbaikan').update({
+        status:'Selesai', progres:'Tiba di Pool', tgl_selesai:now,
+      }).eq('id', prb.id);
+      if (error) throw error;
+      await supabase.from('units').update({ status:'Tiba di Pool' }).eq('id', prb.unit_id);
+      if (prb.laporan_id) await supabase.from('laporan_kerusakan').update({ status:'Tiba di Pool' }).eq('id', prb.laporan_id);
+      await supabase.from('perbaikan_log').insert({ perbaikan_id:prb.id, status_lama:prb.progres, status_baru:'Tiba di Pool', dibuat_oleh:profile?.id });
+      if (prb.driver_id) await supabase.from('notifikasi').insert({ user_id:prb.driver_id, judul:'✅ Kendaraan Tiba di Pool', isi:'Kedatangan kendaraan telah dikonfirmasi oleh pengurus.', tipe:'storing' });
+      toast.success('Kendaraan ditandai tiba di pool dan dipindahkan ke histori.');
+      loadData();
+    } catch (e) { toast.error('Gagal: ' + e.message); }
+    finally { setSaving(false); }
   }
 
   async function handleAddManual() {
@@ -348,6 +369,7 @@ export default function LaporanStoringPage() {
     { value:'laporan',   label:'⚠️ Laporan Baru',      badge: laporan.length   },
     { value:'perbaikan', label:'🔧 Perbaikan Berjalan', badge: perbaikan.length },
     { value:'storing',   label:'📍 Storing Berjalan',   badge: storing.length   },
+    { value:'pulang_pool', label:'🏠 Pulang ke Pool',   badge: pulangPool.length },
     { value:'standby',   label:'🅿️ Standby',            badge: standby.length   },
     { value:'histori',   label:'📋 Histori',            badge: 0                },
   ];
@@ -459,6 +481,15 @@ export default function LaporanStoringPage() {
             ? <div style={{ background:'#fff', border:'1px solid #ebeced', borderRadius:8, padding:40, textAlign:'center', color:'#c4c7cf' }}>Tidak ada storing yang berjalan</div>
             : <div style={{ display:'flex', flexDirection:'column', gap:10 }}>{storing.map(p=><CardBerjalan key={p.id} p={p}/>)}</div>
           }
+        </div>
+      )}
+
+      {!loading && tab==='pulang_pool' && (
+        <div>
+          <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:8, padding:'8px 14px', marginBottom:12, fontSize:11, color:'#1e3a8a', fontWeight:600 }}>
+            🏠 Menunggu kendaraan tiba di pool. Tidak menggunakan tahapan storing.
+          </div>
+          {pulangPool.length===0 ? <div style={{ background:'#fff', border:'1px solid #ebeced', borderRadius:8, padding:40, textAlign:'center', color:'#c4c7cf' }}>Tidak ada kendaraan dalam perjalanan ke pool</div> : <div style={{ display:'flex', flexDirection:'column', gap:10 }}>{pulangPool.map(p => <div key={p.id} style={{ background:'#fff', border:'1px solid #bfdbfe', borderLeft:'4px solid #1e3a8a', borderRadius:10, padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}><div><div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap', marginBottom:5 }}><span style={{ fontWeight:700, fontFamily:'monospace', fontSize:13 }}>{p.unit?.nopol}</span><span style={{ background:'#dbeafe', color:'#1e3a8a', padding:'2px 8px', borderRadius:20, fontSize:10, fontWeight:700 }}>🏠 Menunggu Tiba di Pool</span></div><p style={{ fontSize:11, color:'#475569' }}>Driver: {p.driver?.nama || '-'}</p><p style={{ fontSize:10, color:'#94a3b8', marginTop:3 }}>Disetujui {new Date(p.tgl_mulai || p.created_at).toLocaleString('id-ID',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</p></div><button onClick={() => handleTibaPool(p)} disabled={saving} style={{ background:'#059669', color:'#fff', border:'none', borderRadius:8, padding:'9px 14px', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>✓ Mobil Tiba di Pool</button></div>)}</div>}
         </div>
       )}
 

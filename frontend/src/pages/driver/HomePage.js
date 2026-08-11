@@ -110,6 +110,7 @@ export default function DriverHomePage() {
   const [perbaikanAktif, setPrb]=useState(null);
   const [loading, setLoad]    = useState(true);
   const [refreshing, setRef]  = useState(false);
+  const [confirmingPool, setConfirmingPool] = useState(false);
   const [jam, setJam]         = useState('');
 
   useEffect(() => {
@@ -128,7 +129,7 @@ export default function DriverHomePage() {
   
   supabase.from('laporan_kerusakan').select('id,status,deskripsi,pilihan_driver,created_at')
     .eq('driver_id', driver.id)
-    .not('status', 'in', '("Selesai","Lanjut Perjalanan")')
+    .not('status', 'in', '("Selesai","Lanjut Perjalanan","Tiba di Pool")')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle(),
@@ -217,6 +218,17 @@ const ch = supabase.channel(channelId)
     }
   };
 
+  const handleTibaPool = async () => {
+    if (!perbaikanAktif || !window.confirm('Konfirmasi kendaraan sudah tiba di pool?')) return;
+    setConfirmingPool(true);
+    try {
+      const { error } = await supabase.rpc('konfirmasi_tiba_pool', { p_perbaikan_id: perbaikanAktif.id, p_driver_id: driver.id });
+      if (error) throw error;
+      loadData(true);
+    } catch (error) { window.alert('Gagal mengonfirmasi: ' + error.message); }
+    finally { setConfirmingPool(false); }
+  };
+
   if (loading) return <DriverLayout><div style={{padding:40,textAlign:'center',color:'#74777f'}}>Memuat status driver...</div></DriverLayout>;
 
   return (
@@ -289,8 +301,16 @@ const ch = supabase.channel(channelId)
           </div>
         )}
 
+        {perbaikanAktif?.tipe === 'pulang_ke_pool' && (
+          <div style={{ background:'#eff6ff', border:'2px solid #3b82f6', borderRadius:16, padding:18, marginBottom:16 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}><span style={{ fontSize:28 }}>🏠</span><div><p style={{ fontSize:10, fontWeight:700, color:'#1e3a8a', marginBottom:2 }}>PULANG KE POOL</p><h4 style={{ fontSize:16, fontWeight:800, color:'#0f172a' }}>Menunggu kendaraan tiba di pool</h4></div></div>
+            <p style={{ fontSize:12, color:'#1e3a8a', lineHeight:1.5, marginBottom:14 }}>Setelah kendaraan sampai di pool, tekan tombol di bawah. Jika driver lupa, pengurus juga dapat mengonfirmasinya dari menu Pulang ke Pool.</p>
+            <button onClick={handleTibaPool} disabled={confirmingPool} style={{ width:'100%', background:confirmingPool?'#94a3b8':'#059669', color:'#fff', border:'none', borderRadius:10, padding:'12px 14px', fontSize:13, fontWeight:800, cursor:confirmingPool?'not-allowed':'pointer', fontFamily:'inherit' }}>{confirmingPool ? 'Menyimpan...' : '✓ Saya Sudah Tiba di Pool'}</button>
+          </div>
+        )}
+
         {/* 🚨 KARTU TRACKING STORING & MEKANIK REALTIME */}
-        {perbaikanAktif && (
+        {perbaikanAktif && perbaikanAktif.tipe !== 'pulang_ke_pool' && (
           <div style={{
             background: '#ffffff',
             borderRadius: 16,

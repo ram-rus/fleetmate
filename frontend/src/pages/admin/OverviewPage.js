@@ -4,7 +4,7 @@
 // hari ini — bukan laporan status utilisasi armada.
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
-import { TIPE_STORING, TIPE_PERBAIKAN } from '../../lib/perbaikanConstants';
+import { getTipe, TIPE_STORING, TIPE_PERBAIKAN } from '../../lib/perbaikanConstants';
 import { attachDriverInfo } from '../../lib/driverHelper';
 import HasilBreakdown from '../../components/HasilP2HBreakdown';
 
@@ -190,6 +190,29 @@ function P2HDetailModal({ p2h, onClose }) {
   );
 }
 
+function PerbaikanDetailModal({ perbaikan, onClose }) {
+  const tipe = getTipe(perbaikan.tipe);
+  const selesai = perbaikan.status === 'Selesai';
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(17,24,39,0.55)', backdropFilter:'blur(3px)', zIndex:50, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+      <div style={{ background:C.cardBg, borderRadius:10, width:'100%', maxWidth:420, maxHeight:'85vh', display:'flex', flexDirection:'column', border:`1px solid ${C.cardBdr}`, boxShadow:'0 16px 48px rgba(17,24,39,0.14)' }}>
+        <div style={{ position:'sticky', top:0, zIndex:1, display:'flex', justifyContent:'space-between', alignItems:'center', padding:'16px 20px', background:C.cardBg, borderBottom:`1px solid ${C.cardBdr}` }}>
+          <h3 style={{ fontSize:15, fontWeight:700, fontFamily:C.head, color:C.textPrimary }}>Detail Penanganan - {perbaikan.unit?.nopol || '-'}</h3>
+          <button aria-label="Tutup detail" onClick={onClose} style={{ background:'#F1F5F9', border:'none', borderRadius:14, width:28, height:28, fontSize:18, lineHeight:'26px', cursor:'pointer', color:C.textSecond }}>x</button>
+        </div>
+        <div style={{ overflowY:'auto', flex:1, padding:20, fontSize:12 }}>
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:16 }}><span style={{ background:tipe.bg, color:tipe.color, padding:'3px 9px', borderRadius:20, fontWeight:700 }}>{tipe.icon} {tipe.label}</span><span style={{ background:selesai ? C.greenBg : C.blueBg, color:selesai ? C.green : C.blue, padding:'3px 9px', borderRadius:20, fontWeight:700 }}>{selesai ? 'Selesai' : perbaikan.status}</span></div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+            <div><p style={{ color:C.textLight, marginBottom:2 }}>Progres terakhir</p><p style={{ fontWeight:700, color:C.textPrimary }}>{perbaikan.progres || '-'}</p></div>
+            <div><p style={{ color:C.textLight, marginBottom:2 }}>{selesai ? 'Selesai pada' : 'Dibuat pada'}</p><p style={{ fontWeight:700, color:C.textPrimary }}>{new Date(selesai ? perbaikan.tgl_selesai : perbaikan.created_at).toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</p></div>
+          </div>
+          {perbaikan.deskripsi && <div style={{ marginTop:16, background:C.contentBg, borderRadius:8, padding:12 }}><p style={{ color:C.textLight, fontSize:10, fontWeight:700, textTransform:'uppercase', marginBottom:5 }}>Keterangan</p><p style={{ color:C.textSecond, lineHeight:1.5 }}>{perbaikan.deskripsi}</p></div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Komponen utama ────────────────────────────────────────────
 export default function OverviewPage() {
   const [units,        setUnits]       = useState([]);
@@ -200,6 +223,7 @@ export default function OverviewPage() {
   const [loading,      setLoad]        = useState(true);
   const [modal,        setModal]       = useState(null);
   const [p2hDetail,    setP2hDetail]   = useState(null);
+  const [perbaikanDetail, setPerbaikanDetail] = useState(null);
   const [tindakanOpen, setTindakanOpen]= useState(false);
   const [tindakanAutoOpened, setAutoOpened] = useState(false);
 
@@ -221,11 +245,11 @@ export default function OverviewPage() {
         .order('created_at',{ascending:false}),
       // Perbaikan/storing yang baru dibuat — untuk feed aktivitas
       supabase.from('perbaikan')
-        .select('id,tipe,status,created_at,unit:units(nopol)')
+        .select('id,tipe,status,progres,deskripsi,created_at,tgl_mulai,tgl_selesai,unit:units(nopol)')
         .order('created_at',{ascending:false}).limit(5),
       // Perbaikan/storing yang baru selesai — untuk feed aktivitas
       supabase.from('perbaikan')
-        .select('id,tipe,status,tgl_selesai,unit:units(nopol)')
+        .select('id,tipe,status,progres,deskripsi,created_at,tgl_mulai,tgl_selesai,unit:units(nopol)')
         .eq('status','Selesai')
         .not('tgl_selesai','is',null)
         .order('tgl_selesai',{ascending:false}).limit(5),
@@ -262,7 +286,7 @@ export default function OverviewPage() {
       };
     });
     const prbBaruItems = (prbBaruRes.data||[]).filter(x=>x.status!=='Selesai').map(x=>({
-      id:'baru-'+x.id, nopol:x.unit?.nopol||'—', nama:'—',
+      id:'baru-'+x.id, perbaikan:x, nopol:x.unit?.nopol||'—', nama:'—',
       tag: TIPE_STORING.includes(x.tipe)?'Storing':'Perbaikan',
       tagColor: TIPE_STORING.includes(x.tipe)?C.red:C.amber,
       tagBg:    TIPE_STORING.includes(x.tipe)?C.redBg:C.amberBg,
@@ -270,7 +294,7 @@ export default function OverviewPage() {
       icon:'🔧', ts:x.created_at,
     }));
     const prbSelesaiItems = (prbSelesaiRes.data||[]).map(x=>({
-      id:'selesai-'+x.id, nopol:x.unit?.nopol||'—', nama:'—',
+      id:'selesai-'+x.id, perbaikan:x, nopol:x.unit?.nopol||'—', nama:'—',
       tag:'Selesai', tagColor:C.green, tagBg:C.greenBg,
       desc:`${TIPE_STORING.includes(x.tipe)?'Storing':'Perbaikan'} selesai — unit kembali jalan`,
       icon:'✅', ts:x.tgl_selesai,
@@ -547,6 +571,12 @@ export default function OverviewPage() {
                           Detail
                         </button>
                       )}
+                      {a.perbaikan && (
+                        <button onClick={() => setPerbaikanDetail(a.perbaikan)}
+                          style={{ background:'none', border:`1px solid ${C.cardBdr}`, borderRadius:6, padding:'4px 10px', fontSize:11, fontWeight:600, color:C.blue, cursor:'pointer', fontFamily:C.body, whiteSpace:'nowrap' }}>
+                          Detail
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -557,6 +587,7 @@ export default function OverviewPage() {
 
       {modal && <DrillModal title={modal.title} items={modal.items} columns={modal.columns} onClose={()=>setModal(null)}/>}
       {p2hDetail && <P2HDetailModal p2h={p2hDetail} onClose={()=>setP2hDetail(null)}/>}
+      {perbaikanDetail && <PerbaikanDetailModal perbaikan={perbaikanDetail} onClose={()=>setPerbaikanDetail(null)}/>}
     </div>
   );
 }

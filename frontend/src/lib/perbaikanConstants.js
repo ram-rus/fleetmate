@@ -40,6 +40,8 @@ const STATUS_MAP = {
   'Menunggu Approval': { label:'Menunggu Approval', color:'#92400e', bg:'#fef3c7' },
   'Disetujui':         { label:'Disetujui',         color:'#065f46', bg:'#d1fae5' },
   'Berjalan':          { label:'Berjalan',           color:'#1e3a8a', bg:'#dbeafe' },
+  'Menunggu Tiba di Pool': { label:'Menunggu Tiba di Pool', color:'#1e3a8a', bg:'#dbeafe' },
+  'Tiba di Pool':      { label:'Tiba di Pool',       color:'#065f46', bg:'#d1fae5' },
   'Selesai':           { label:'Selesai',            color:'#374151', bg:'#f3f4f6' },
   'Ditolak':           { label:'Ditolak',            color:'#7f1d1d', bg:'#fee2e2' },
   'Lanjut Perjalanan': { label:'Lanjut Perjalanan',  color:'#065f46', bg:'#f0fdf4' },
@@ -66,8 +68,14 @@ export const PROGRES_PERBAIKAN = [
   { value:'Selesai',               icon:'✅', color:'#166534', bg:'#f0fdf4', next:null                     },
 ];
 
+export const PROGRES_PULANG_POOL = [
+  { value:'Menunggu Tiba di Pool', icon:'🏠', color:'#1e3a8a', bg:'#dbeafe', next:'Tiba di Pool' },
+  { value:'Tiba di Pool', icon:'✅', color:'#166534', bg:'#f0fdf4', next:null },
+];
+
 // ── Helper: pilih PROGRES_LIST sesuai tipe ──────────────────
 export function getProgresList(tipe) {
+  if (TIPE_PULANG_POOL.includes(tipe)) return PROGRES_PULANG_POOL;
   if (isPerbaikan(tipe)) {
     return [{ value:'Tanpa Tahapan', icon:'•', color:'#64748b', bg:'#f1f5f9', next:null }];
   }
@@ -85,7 +93,7 @@ export function getProgres(progres, tipe) {
   if (found) return found;
   // Jika perbaikan_pool, JANGAN fallback ke PROGRES_STORING
   // — tampilkan progres tidak dikenal daripada tampilkan alur yang salah
-  if (isPerbaikan(tipe)) {
+  if (isPerbaikan(tipe) || TIPE_PULANG_POOL.includes(tipe)) {
     return { value: progres || '—', icon:'⚠️', color:'#92400e', bg:'#fef3c7', next:'Perbaikan Ditugaskan' };
   }
   // Untuk storing, cari di seluruh PROGRES_STORING
