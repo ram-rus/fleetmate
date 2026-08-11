@@ -205,7 +205,7 @@ export default function LaporanStoringPage() {
       const { data: inserted, error: insertErr } = await supabase.from('perbaikan').insert({
         unit_id: mfUnit, dibuat_oleh: profile?.id, sumber:'admin_manual', tipe: mfTipe,
         status:'Berjalan',
-        progres: isBengkelLuar ? 'Mekanik Ditugaskan' : 'Perbaikan Ditugaskan',
+        progres: isBengkelLuar ? 'Mekanik Ditugaskan' : 'Tanpa Tahapan',
         deskripsi: mfDeskripsi,
         lokasi_tipe: isBengkelLuar ? 'Di Bengkel Luar' : 'Di Pool',
         mekanik_id:       (!isBengkelLuar && mfMekanik) ? mfMekanik : null,
@@ -287,8 +287,14 @@ export default function LaporanStoringPage() {
                 borderRadius:8, padding:'7px 12px', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
               {pg.next==='Selesai'?'✅ Selesai':`→ ${pg.next}`}
             </button>
-          )}
-          <button onClick={() => { setSelPrb(p); setTabModal('progres'); loadLogs(p.id); }}
+           )}
+           {p.tipe === 'perbaikan_pool' && (
+             <button onClick={() => updateProgres(p, 'Selesai')} disabled={saving}
+               style={{ background:'#10b981', color:'#fff', border:'none', borderRadius:8, padding:'7px 12px', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+               Selesaikan
+             </button>
+           )}
+           <button onClick={() => { setSelPrb(p); setTabModal('progres'); loadLogs(p.id); }}
             style={{ background:'#fff', color:'#0F172A', border:'1px solid #c4c7cf', borderRadius:8, padding:'6px 12px', fontSize:11, cursor:'pointer' }}>
             📋 Detail
           </button>

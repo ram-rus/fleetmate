@@ -6,6 +6,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { TIPE_STORING, TIPE_PERBAIKAN } from '../../lib/perbaikanConstants';
 import { attachDriverInfo } from '../../lib/driverHelper';
+import HasilBreakdown from '../../components/HasilP2HBreakdown';
 
 const C = {
   contentBg:  '#F5F3EF',
@@ -134,6 +135,61 @@ function StatusChip({ status }) {
   );
 }
 
+// ── Popup detail hasil P2H — dipakai dari tombol Detail di Aktivitas Terkini ─
+function P2HDetailModal({ p2h, onClose }) {
+  const sc = STATUS_P2H_COLOR[p2h.status] || { bg:'#F1F5F9', color:'#475569' };
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(17,24,39,0.55)',
+      backdropFilter:'blur(3px)', zIndex:50, display:'flex',
+      alignItems:'center', justifyContent:'center', padding:20 }}>
+      <div style={{ background:C.cardBg, borderRadius:10, width:'100%', maxWidth:420,
+        maxHeight:'85vh', display:'flex', flexDirection:'column',
+        border:`1px solid ${C.cardBdr}`, boxShadow:'0 16px 48px rgba(17,24,39,0.14)' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center',
+          padding:'16px 20px', borderBottom:`1px solid ${C.cardBdr}`, flexShrink:0 }}>
+          <h3 style={{ fontSize:15, fontWeight:700, fontFamily:C.head, color:C.textPrimary }}>
+            Detail P2H — {p2h.unit?.nopol || '—'}
+          </h3>
+          <button onClick={onClose} style={{ background:'none', border:'none', fontSize:18,
+            cursor:'pointer', color:C.textLight, width:28, height:28, borderRadius:5,
+            display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
+        </div>
+        <div style={{ overflowY:'auto', flex:1, padding:20 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, fontSize:12, marginBottom:8 }}>
+            <div>
+              <p style={{ color:C.textLight, marginBottom:2 }}>Driver</p>
+              <p style={{ fontWeight:700, color:C.textPrimary }}>{p2h.driver?.nama || '—'}</p>
+            </div>
+            <div>
+              <p style={{ color:C.textLight, marginBottom:2 }}>Status</p>
+              <span style={{ background:sc.bg, color:sc.color, padding:'2px 8px', borderRadius:9999,
+                fontSize:11, fontWeight:700 }}>{p2h.status}</span>
+            </div>
+            <div>
+              <p style={{ color:C.textLight, marginBottom:2 }}>KM Saat P2H</p>
+              <p style={{ fontWeight:700, color:C.textPrimary }}>
+                {p2h.km_saat_p2h?.toLocaleString('id-ID') || '—'} km
+              </p>
+            </div>
+            <div>
+              <p style={{ color:C.textLight, marginBottom:2 }}>Waktu</p>
+              <p style={{ fontWeight:700, color:C.textPrimary }}>
+                {new Date(p2h.created_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}
+              </p>
+            </div>
+          </div>
+          {p2h.catatan && (
+            <div style={{ marginTop:8, background:C.contentBg, borderRadius:8, padding:10, fontSize:12, color:C.textSecond }}>
+              {p2h.catatan}
+            </div>
+          )}
+          <HasilBreakdown hasil={p2h.hasil} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Komponen utama ────────────────────────────────────────────
 export default function OverviewPage() {
   const [units,        setUnits]       = useState([]);
@@ -143,6 +199,7 @@ export default function OverviewPage() {
   const [aktivitas,    setAktv]        = useState([]);
   const [loading,      setLoad]        = useState(true);
   const [modal,        setModal]       = useState(null);
+  const [p2hDetail,    setP2hDetail]   = useState(null);
   const [tindakanOpen, setTindakanOpen]= useState(false);
   const [tindakanAutoOpened, setAutoOpened] = useState(false);
 
@@ -157,8 +214,9 @@ export default function OverviewPage() {
         .in('status',['Menunggu Approval Storing','Menunggu Approval Pulang ke Pool'])
         .order('created_at',{ascending:false}),
       // SEMUA P2H hari ini (bukan cuma 5) — dipakai untuk hitungan sudah/belum/tidak layak
+      // + kolom hasil/catatan/km_saat_p2h untuk popup detail dari Aktivitas Terkini
       supabase.from('p2h')
-        .select('id,status,created_at,driver_id,unit_id,unit:units(nopol)')
+        .select('id,status,created_at,driver_id,unit_id,hasil,catatan,km_saat_p2h,tanggal,unit:units(nopol)')
         .eq('tanggal', today)
         .order('created_at',{ascending:false}),
       // Perbaikan/storing yang baru dibuat — untuk feed aktivitas
@@ -198,7 +256,7 @@ export default function OverviewPage() {
     const p2hItems = p2hWithDriver.slice(0,5).map(l=>{
       const t = P2H_TAG[l.status] || P2H_TAG['TIDAK LAYAK'];
       return {
-        id:'p2h-'+l.id, nopol:l.unit?.nopol||'—', nama:l.driver?.nama||'—',
+        id:'p2h-'+l.id, p2hId:l.id, nopol:l.unit?.nopol||'—', nama:l.driver?.nama||'—',
         tag:'P2H', tagColor:t.color, tagBg:t.bg,
         desc:`Checklist ${t.text}`, icon:t.icon, ts:l.created_at,
       };
@@ -473,9 +531,22 @@ export default function OverviewPage() {
                       </div>
                       <p style={{ fontSize:11, color:C.textSecond }}>{a.desc}</p>
                     </div>
-                    <div style={{ textAlign:'right', flexShrink:0 }}>
-                      <p style={{ fontSize:11, color:C.textPrimary, fontFamily:C.mono, fontWeight:500 }}>{timeHH}</p>
-                      <p style={{ fontSize:9, color:C.textLight }}>{timeStr}</p>
+                    <div style={{ textAlign:'right', flexShrink:0, display:'flex', alignItems:'center', gap:10 }}>
+                      <div>
+                        <p style={{ fontSize:11, color:C.textPrimary, fontFamily:C.mono, fontWeight:500 }}>{timeHH}</p>
+                        <p style={{ fontSize:9, color:C.textLight }}>{timeStr}</p>
+                      </div>
+                      {a.tag === 'P2H' && (
+                        <button onClick={()=>{
+                            const rec = p2hHariIni.find(x=>x.id===a.p2hId);
+                            if (rec) setP2hDetail(rec);
+                          }}
+                          style={{ background:'none', border:`1px solid ${C.cardBdr}`, borderRadius:6,
+                            padding:'4px 10px', fontSize:11, fontWeight:600, color:C.blue,
+                            cursor:'pointer', fontFamily:C.body, whiteSpace:'nowrap' }}>
+                          Detail
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -485,6 +556,7 @@ export default function OverviewPage() {
       </div>
 
       {modal && <DrillModal title={modal.title} items={modal.items} columns={modal.columns} onClose={()=>setModal(null)}/>}
+      {p2hDetail && <P2HDetailModal p2h={p2hDetail} onClose={()=>setP2hDetail(null)}/>}
     </div>
   );
 }

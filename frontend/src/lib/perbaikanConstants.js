@@ -14,11 +14,13 @@ export const PERBAIKAN_SELECT = `
 // Catatan: pulang_ke_pool sebelumnya TIDAK masuk ke daftar manapun — akibatnya
 // unit dengan tipe ini tidak pernah dihitung sebagai "sibuk" di Overview, dan
 // bisa salah tampil sebagai "Sedang Jalan" padahal sedang menuju pool.
-export const TIPE_STORING    = ['storing_internal','storing_luar','bengkel_luar','pulang_ke_pool'];
+export const TIPE_STORING    = ['storing_internal','storing_luar','bengkel_luar'];
 export const TIPE_PERBAIKAN  = ['perbaikan_pool'];
+export const TIPE_PULANG_POOL = ['pulang_ke_pool'];
 
 export function isStoring(tipe)   { return TIPE_STORING.includes(tipe); }
 export function isPerbaikan(tipe) { return TIPE_PERBAIKAN.includes(tipe); }
+export function hasTahapan(tipe)  { return TIPE_STORING.includes(tipe); }
 
 // ── Tipe perbaikan ──────────────────────────────────────────
 const TIPE_MAP = {
@@ -66,7 +68,10 @@ export const PROGRES_PERBAIKAN = [
 
 // ── Helper: pilih PROGRES_LIST sesuai tipe ──────────────────
 export function getProgresList(tipe) {
-  return isPerbaikan(tipe) ? PROGRES_PERBAIKAN : PROGRES_STORING;
+  if (isPerbaikan(tipe)) {
+    return [{ value:'Tanpa Tahapan', icon:'•', color:'#64748b', bg:'#f1f5f9', next:null }];
+  }
+  return PROGRES_STORING;
 }
 
 // ── Tetap export PROGRES_LIST sebagai alias PROGRES_STORING ─

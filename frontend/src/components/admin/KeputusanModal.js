@@ -179,9 +179,11 @@ export default function KeputusanModal({ laporan, mekaniks, onClose, onDone }) {
             dibuat_oleh:profile?.id,
             sumber:     'driver_app',
             tipe:       'pulang_ke_pool',
-            status:     'Disetujui',
+            status:     'Selesai',
+            progres:    'Disetujui',
             deskripsi:  laporan.deskripsi,
             tgl_mulai:  new Date().toISOString(),
+            tgl_selesai:new Date().toISOString(),
           });
           if (prbErr) throw prbErr;
 
@@ -209,9 +211,11 @@ export default function KeputusanModal({ laporan, mekaniks, onClose, onDone }) {
             dibuat_oleh:profile?.id,
             sumber:     'driver_app',
             tipe:       'pulang_ke_pool',
-            status:     'Disetujui',
+            status:     'Selesai',
+            progres:    'Disetujui',
             deskripsi:  laporan.deskripsi,
             tgl_mulai:  new Date().toISOString(),
+            tgl_selesai:new Date().toISOString(),
           });
           if (prbErr) throw prbErr;
 
