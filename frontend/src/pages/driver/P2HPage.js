@@ -37,6 +37,12 @@ const BAN_CONFIG = {
     'tronton_kiri_luar', 'tronton_kiri_dalam', 'tronton_kanan_luar', 'tronton_kanan_dalam',
     'ban_stip',
   ],
+  'wingbox': [
+    'depan_kiri', 'depan_kanan',
+    'engkel_kiri_luar', 'engkel_kiri_dalam', 'engkel_kanan_luar', 'engkel_kanan_dalam',
+    'tronton_kiri_luar', 'tronton_kiri_dalam', 'tronton_kanan_luar', 'tronton_kanan_dalam',
+    'ban_stip',
+  ],
   'cdd': [
     'depan_kiri', 'depan_kanan',
     'engkel_kiri_luar', 'engkel_kiri_dalam', 'engkel_kanan_luar', 'engkel_kanan_dalam',
@@ -45,14 +51,23 @@ const BAN_CONFIG = {
   'cde': [
     'depan_kiri', 'depan_kanan', 'engkel_kiri', 'engkel_kanan', 'ban_stip',
   ],
-  // Fuso memakai konfigurasi roda CDD.
+  // Fuso memakai konfigurasi roda CDD (6 roda + ban stip).
   'fuso': [
     'depan_kiri', 'depan_kanan',
     'engkel_kiri_luar', 'engkel_kiri_dalam', 'engkel_kanan_luar', 'engkel_kanan_dalam',
     'ban_stip',
   ],
-  // Grandmax memakai konfigurasi roda CDE.
+  // Grandmax memakai konfigurasi roda CDE (4 roda + ban stip).
   'grandmax': [
+    'depan_kiri', 'depan_kanan', 'engkel_kiri', 'engkel_kanan', 'ban_stip',
+  ],
+  'grand max': [
+    'depan_kiri', 'depan_kanan', 'engkel_kiri', 'engkel_kanan', 'ban_stip',
+  ],
+  'granmax': [
+    'depan_kiri', 'depan_kanan', 'engkel_kiri', 'engkel_kanan', 'ban_stip',
+  ],
+  'gran max': [
     'depan_kiri', 'depan_kanan', 'engkel_kiri', 'engkel_kanan', 'ban_stip',
   ],
 };
@@ -68,11 +83,19 @@ const BAN_LABEL = {
 };
 
 function normalizeTipe(tipe) {
-  return (tipe || '').trim().toLowerCase();
+  const str = (tipe || '').toLowerCase().trim().replace(/[-_]/g, ' ');
+  if (str.includes('gran') || str.includes('grand') || str.includes('max') || str.includes('l300') || str.includes('traga') || str.includes('carry')) return 'grandmax';
+  if (str.includes('fuso')) return 'fuso';
+  if (str.includes('wing') || str.includes('box')) return 'wing box';
+  if (str.includes('cdd')) return 'cdd';
+  if (str.includes('cde') || str.includes('engkel')) return 'cde';
+  return str;
 }
 
 function getBanKeys(tipeUnit) {
-  return BAN_CONFIG[normalizeTipe(tipeUnit)] || null; // null = tipe belum dikenal sistem
+  const norm = normalizeTipe(tipeUnit);
+  if (BAN_CONFIG[norm]) return BAN_CONFIG[norm];
+  return BAN_CONFIG['cde']; // fallback aman jika tipe belum terdaftar agar driver tidak terhalang P2H
 }
 
 // ---------- Opsi per item ----------

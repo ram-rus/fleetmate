@@ -199,7 +199,7 @@ export default function UnitPage() {
           if (tp.includes('cdd')) tipe = 'CDD';
           else if (tp.includes('cde')) tipe = 'CDE';
           else if (tp.includes('fuso')) tipe = 'Fuso';
-          else if (tp.includes('grandmax')) tipe = 'Grandmax';
+          else if (tp.includes('gran') || tp.includes('grand') || tp.includes('max')) tipe = 'Grandmax';
           else if (tp.includes('wing') || tp.includes('box')) tipe = 'Wing Box';
           return { ...r, tipe_kepemilikan: kepemilikan, tipe };
         });
