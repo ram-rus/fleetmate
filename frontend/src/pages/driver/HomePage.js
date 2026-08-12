@@ -173,10 +173,10 @@ const ch = supabase.channel(channelId)
     }
   });
 
-    // 2. Polling setiap 5 detik
+    // 2. Polling setiap 20 detik (backup jika realtime terputus, efisien hemat baterai/kuota)
     const pollInterval = setInterval(() => {
       loadData();
-    }, 5000);
+    }, 20000);
 
     // 3. Re-fetch saat tab/browser HP dibuka kembali
     const handleVisibilityChange = () => {
