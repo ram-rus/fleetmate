@@ -31,7 +31,7 @@ export default function LoginPage() {
       if (profileError) throw new Error('Profil tidak ditemukan. Hubungi admin.');
 
       // Step 3: Redirect
-      if (['admin','supervisor','manager'].includes(profile.role)) {
+      if (['admin','supervisor','manager','monitoring'].includes(profile.role)) {
         window.location.replace('/admin');
       } else if (profile.role === 'driver') {
         window.location.replace('/driver');

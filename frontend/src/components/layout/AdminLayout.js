@@ -161,7 +161,9 @@ export default function AdminLayout({ children }) {
                 overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                 {profile?.nama || 'Admin'}
               </p>
-              <p style={{ fontSize:10, color:C.labelTx, textTransform:'capitalize' }}>{profile?.role}</p>
+              <p style={{ fontSize:10, color: profile?.role === 'monitoring' ? '#d97706' : C.labelTx, fontWeight: profile?.role === 'monitoring' ? 700 : 400, textTransform:'capitalize' }}>
+                {profile?.role === 'monitoring' ? 'Monitoring (Read-Only)' : (profile?.role || 'Admin')}
+              </p>
             </div>
             {/* Logout icon */}
             <button onClick={handleLogout} title="Keluar"

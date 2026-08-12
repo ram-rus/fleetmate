@@ -57,7 +57,7 @@ async function prosesMekanikLuar({ unitId, driverId, laporanId, profileId, deskr
 }
 
 export default function KeputusanModal({ laporan, mekaniks, onClose, onDone }) {
-  const { profile }           = useAuth();
+  const { profile, canManage = true } = useAuth();
   const isMinta               = laporan.pilihan_driver === 'minta_storing';
   const [pilihan, setPilihan] = useState('');
   const [saving, setSaving]   = useState(false);
@@ -319,91 +319,106 @@ export default function KeputusanModal({ laporan, mekaniks, onClose, onDone }) {
             </p>
           </div>
 
-          {/* Pilihan keputusan */}
-          <p style={{ fontSize:12, fontWeight:700, marginBottom:10 }}>Pilih Tindakan</p>
-          <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
-            {OPSI.map(o => (
-              <label key={o.value} onClick={()=>setPilihan(o.value)}
-                style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'11px 14px', cursor:'pointer',
-                  border: pilihan===o.value?`2px solid ${o.border}`:'1px solid #ebeced',
-                  borderRadius:10, background: pilihan===o.value?o.bg:'#fff', transition:'all 0.15s',
-                }}>
-                <input type="radio" name="keputusan" checked={pilihan===o.value} onChange={()=>setPilihan(o.value)} style={{ accentColor:'#1a2b4b', marginTop:1, flexShrink:0 }}/>
-                <span style={{ fontSize:20, flexShrink:0 }}>{o.icon}</span>
-                <div>
-                  <p style={{ fontSize:12, fontWeight:700, color:pilihan===o.value?o.color:'#1a1c1e', marginBottom:2 }}>{o.label}</p>
-                  <p style={{ fontSize:10, color:pilihan===o.value?o.color:'#74777f', opacity:0.85 }}>{o.desc}</p>
-                </div>
-              </label>
-            ))}
-          </div>
-
-          {/* Form tambahan: Storing Internal */}
-          {pilihan === 'storing_internal' && (
-            <div style={{ background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:10, padding:14, marginBottom:16 }}>
-              <p style={{ fontSize:12, fontWeight:700, color:'#065f46', marginBottom:10 }}>👷 Penugasan Mekanik Internal</p>
-              <div style={{ marginBottom:10 }}>
-                <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', marginBottom:4 }}>Mekanik <span style={{ color:'#ba1a1a' }}>*</span></label>
-                <select value={mekanikId} onChange={e=>setMekanikId(e.target.value)}
-                  style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'9px 12px', fontSize:12, fontFamily:"'Inter',sans-serif", outline:'none' }}>
-                  <option value="">-- Pilih Mekanik --</option>
-                  {mekaniks.map(m=><option key={m.id} value={m.id}>{m.nama} {m.no_hp?`(${m.no_hp})`:''}</option>)}
-                </select>
+          {/* Mode Monitoring (Read-Only) vs Mode Manage */}
+          {!canManage ? (
+            <div style={{ marginTop:16 }}>
+              <div style={{ background:'#fffbeb', border:'1px solid #fcd34d', borderRadius:10, padding:14, marginBottom:16, fontSize:12, color:'#92400e', fontWeight:600, textAlign:'center' }}>
+                🔒 Anda masuk sebagai role <b>Monitoring (Hanya Lihat)</b>. Pengambilan keputusan hanya dapat dilakukan oleh Admin / Manager.
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
-                <div>
-                  <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', marginBottom:4 }}>Tgl Berangkat</label>
-                  <input type="date" value={tglBerangkat} onChange={e=>setTglBrkt(e.target.value)}
-                    style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'8px 10px', fontSize:12, fontFamily:"'Inter',sans-serif", outline:'none', boxSizing:'border-box' }}/>
-                </div>
-                <div>
-                  <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', marginBottom:4 }}>Jam Berangkat</label>
-                  <input type="time" value={jamBerangkat} onChange={e=>setJamBrkt(e.target.value)}
-                    style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'8px 10px', fontSize:12, fontFamily:"'Inter',sans-serif", outline:'none', boxSizing:'border-box' }}/>
-                </div>
-              </div>
-              <div style={{ marginBottom:10 }}>
-                <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', marginBottom:4 }}>Estimasi Tiba</label>
-                <input type="time" value={estimasiTiba} onChange={e=>setEstTiba(e.target.value)}
-                  style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'8px 10px', fontSize:12, fontFamily:"'Inter',sans-serif", outline:'none', boxSizing:'border-box' }}/>
-              </div>
-              <div>
-                <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', marginBottom:4 }}>Pesan untuk Driver (opsional)</label>
-                <textarea rows={2} value={catatanDriver} onChange={e=>setCatatanDrv(e.target.value)}
-                  placeholder="Contoh: Tetap standby di lokasi, mekanik segera tiba..."
-                  style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'8px 10px', fontSize:12, fontFamily:"'Inter',sans-serif", resize:'none', outline:'none', boxSizing:'border-box' }}/>
-              </div>
+              <button onClick={onClose}
+                style={{ width:'100%', background:'#1a2b4b', color:'#fff', border:'none', borderRadius:10, padding:'11px 0', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'Inter',sans-serif" }}>
+                Tutup Detail
+              </button>
             </div>
-          )}
-
-          {/* Form tambahan: Mekanik Luar (untuk storing atau alihan) */}
-          {(pilihan === 'mekanik_luar' || pilihan === 'alihkan_mekanik_luar') && (
-            <div style={{ background:'#fffbeb', border:'1px solid #fcd34d', borderRadius:10, padding:14, marginBottom:16 }}>
-              <p style={{ fontSize:12, fontWeight:700, color:'#92400e', marginBottom:10 }}>🏭 Data Mekanik Luar</p>
-              <div style={{ marginBottom:10 }}>
-                <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', marginBottom:4 }}>Nama Bengkel / Mekanik <span style={{ color:'#ba1a1a' }}>*</span></label>
-                <input value={namaLuar} onChange={e=>setNamaLuar(e.target.value)} placeholder="Nama bengkel atau mekanik..."
-                  style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'9px 12px', fontSize:12, fontFamily:"'Inter',sans-serif", outline:'none', boxSizing:'border-box' }}/>
+          ) : (
+            <>
+              {/* Pilihan keputusan */}
+              <p style={{ fontSize:12, fontWeight:700, marginBottom:10 }}>Pilih Tindakan</p>
+              <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
+                {OPSI.map(o => (
+                  <label key={o.value} onClick={()=>setPilihan(o.value)}
+                    style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'11px 14px', cursor:'pointer',
+                      border: pilihan===o.value?`2px solid ${o.border}`:'1px solid #ebeced',
+                      borderRadius:10, background: pilihan===o.value?o.bg:'#fff', transition:'all 0.15s',
+                    }}>
+                    <input type="radio" name="keputusan" checked={pilihan===o.value} onChange={()=>setPilihan(o.value)} style={{ accentColor:'#1a2b4b', marginTop:1, flexShrink:0 }}/>
+                    <span style={{ fontSize:20, flexShrink:0 }}>{o.icon}</span>
+                    <div>
+                      <p style={{ fontSize:12, fontWeight:700, color:pilihan===o.value?o.color:'#1a1c1e', marginBottom:2 }}>{o.label}</p>
+                      <p style={{ fontSize:10, color:pilihan===o.value?o.color:'#74777f', opacity:0.85 }}>{o.desc}</p>
+                    </div>
+                  </label>
+                ))}
               </div>
-              <div>
-                <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', marginBottom:4 }}>No HP <span style={{ color:'#ba1a1a' }}>*</span></label>
-                <input value={hpLuar} onChange={e=>setHpLuar(e.target.value)} placeholder="08xxxxxxxxxx" type="tel"
-                  style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'9px 12px', fontSize:12, fontFamily:"'Inter',sans-serif", outline:'none', boxSizing:'border-box' }}/>
-              </div>
-            </div>
-          )}
 
-          {/* Tombol aksi */}
-          <div style={{ display:'flex', gap:8 }}>
-            <button onClick={onClose}
-              style={{ flex:1, background:'#fff', color:'#44474e', border:'1px solid #c4c7cf', borderRadius:10, padding:'11px 0', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'Inter',sans-serif" }}>
-              Batal
-            </button>
-            <button onClick={handleSubmit} disabled={saving || !pilihan}
-              style={{ flex:2, background:(saving||!pilihan)?'#9ca3af':'#1a2b4b', color:'#fff', border:'none', borderRadius:10, padding:'11px 0', fontSize:12, fontWeight:700, cursor:(saving||!pilihan)?'not-allowed':'pointer', fontFamily:"'Inter',sans-serif" }}>
-              {saving ? '⏳ Memproses...' : '✓ Konfirmasi Keputusan'}
-            </button>
-          </div>
+              {/* Form tambahan: Storing Internal */}
+              {pilihan === 'storing_internal' && (
+                <div style={{ background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:10, padding:14, marginBottom:16 }}>
+                  <p style={{ fontSize:12, fontWeight:700, color:'#065f46', marginBottom:10 }}>👷 Penugasan Mekanik Internal</p>
+                  <div style={{ marginBottom:10 }}>
+                    <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', marginBottom:4 }}>Mekanik <span style={{ color:'#ba1a1a' }}>*</span></label>
+                    <select value={mekanikId} onChange={e=>setMekanikId(e.target.value)}
+                      style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'9px 12px', fontSize:12, fontFamily:"'Inter',sans-serif", outline:'none' }}>
+                      <option value="">-- Pilih Mekanik --</option>
+                      {mekaniks.map(m=><option key={m.id} value={m.id}>{m.nama} {m.no_hp?`(${m.no_hp})`:''}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
+                    <div>
+                      <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', marginBottom:4 }}>Tgl Berangkat</label>
+                      <input type="date" value={tglBerangkat} onChange={e=>setTglBrkt(e.target.value)}
+                        style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'8px 10px', fontSize:12, fontFamily:"'Inter',sans-serif", outline:'none', boxSizing:'border-box' }}/>
+                    </div>
+                    <div>
+                      <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', marginBottom:4 }}>Jam Berangkat</label>
+                      <input type="time" value={jamBerangkat} onChange={e=>setJamBrkt(e.target.value)}
+                        style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'8px 10px', fontSize:12, fontFamily:"'Inter',sans-serif", outline:'none', boxSizing:'border-box' }}/>
+                    </div>
+                  </div>
+                  <div style={{ marginBottom:10 }}>
+                    <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', marginBottom:4 }}>Estimasi Tiba</label>
+                    <input type="time" value={estimasiTiba} onChange={e=>setEstTiba(e.target.value)}
+                      style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'8px 10px', fontSize:12, fontFamily:"'Inter',sans-serif", outline:'none', boxSizing:'border-box' }}/>
+                  </div>
+                  <div>
+                    <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', marginBottom:4 }}>Pesan untuk Driver (opsional)</label>
+                    <textarea rows={2} value={catatanDriver} onChange={e=>setCatatanDrv(e.target.value)}
+                      placeholder="Contoh: Tetap standby di lokasi, mekanik segera tiba..."
+                      style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'8px 10px', fontSize:12, fontFamily:"'Inter',sans-serif", resize:'none', outline:'none', boxSizing:'border-box' }}/>
+                  </div>
+                </div>
+              )}
+
+              {/* Form tambahan: Mekanik Luar (untuk storing atau alihan) */}
+              {(pilihan === 'mekanik_luar' || pilihan === 'alihkan_mekanik_luar') && (
+                <div style={{ background:'#fffbeb', border:'1px solid #fcd34d', borderRadius:10, padding:14, marginBottom:16 }}>
+                  <p style={{ fontSize:12, fontWeight:700, color:'#92400e', marginBottom:10 }}>🏭 Data Mekanik Luar</p>
+                  <div style={{ marginBottom:10 }}>
+                    <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', marginBottom:4 }}>Nama Bengkel / Mekanik <span style={{ color:'#ba1a1a' }}>*</span></label>
+                    <input value={namaLuar} onChange={e=>setNamaLuar(e.target.value)} placeholder="Nama bengkel atau mekanik..."
+                      style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'9px 12px', fontSize:12, fontFamily:"'Inter',sans-serif", outline:'none', boxSizing:'border-box' }}/>
+                  </div>
+                  <div>
+                    <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#44474e', textTransform:'uppercase', marginBottom:4 }}>No HP <span style={{ color:'#ba1a1a' }}>*</span></label>
+                    <input value={hpLuar} onChange={e=>setHpLuar(e.target.value)} placeholder="08xxxxxxxxxx" type="tel"
+                      style={{ width:'100%', border:'1px solid #c4c7cf', borderRadius:8, padding:'9px 12px', fontSize:12, fontFamily:"'Inter',sans-serif", outline:'none', boxSizing:'border-box' }}/>
+                  </div>
+                </div>
+              )}
+
+              {/* Tombol aksi */}
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={onClose}
+                  style={{ flex:1, background:'#fff', color:'#44474e', border:'1px solid #c4c7cf', borderRadius:10, padding:'11px 0', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'Inter',sans-serif" }}>
+                  Batal
+                </button>
+                <button onClick={handleSubmit} disabled={saving || !pilihan}
+                  style={{ flex:2, background:(saving||!pilihan)?'#9ca3af':'#1a2b4b', color:'#fff', border:'none', borderRadius:10, padding:'11px 0', fontSize:12, fontWeight:700, cursor:(saving||!pilihan)?'not-allowed':'pointer', fontFamily:"'Inter',sans-serif" }}>
+                  {saving ? '⏳ Memproses...' : '✓ Konfirmasi Keputusan'}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

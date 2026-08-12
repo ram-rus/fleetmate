@@ -33,7 +33,7 @@ function getStatusUnitSelesaiStandby(alasan) {
 }
 
 export default function LaporanStoringPage() {
-  const { profile }               = useAuth();
+  const { profile, canManage = true } = useAuth();
   const [tab, setTab]             = useState('laporan');
   const [laporan, setLaporan]     = useState([]);
   const [perbaikan, setPerbaikan] = useState([]);
@@ -302,14 +302,14 @@ export default function LaporanStoringPage() {
           <p style={{ fontSize:9, color:'#c4c7cf', marginTop:3 }}>{pgIdx+1}/{progresList.length} tahap{durasi>0?` · ${durasi} hari`:''}</p>
         </div>
         <div style={{ display:'flex', flexDirection:'column', gap:6, flexShrink:0 }}>
-          {pg.next && (
+          {canManage && pg.next && (
             <button onClick={() => updateProgres(p, pg.next)} disabled={saving}
               style={{ background:pg.next==='Selesai'?'#10b981':'#1a2b4b', color:'#fff', border:'none',
                 borderRadius:8, padding:'7px 12px', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
               {pg.next==='Selesai'?'✅ Selesai':`→ ${pg.next}`}
             </button>
            )}
-           {p.tipe === 'perbaikan_pool' && (
+           {canManage && p.tipe === 'perbaikan_pool' && (
              <button onClick={() => updateProgres(p, 'Selesai')} disabled={saving}
                style={{ background:'#10b981', color:'#fff', border:'none', borderRadius:8, padding:'7px 12px', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
                Selesaikan
@@ -383,16 +383,18 @@ export default function LaporanStoringPage() {
           <h2 style={{ fontSize:18, fontWeight:700, marginBottom:4 }}>Laporan & Perbaikan</h2>
           <p style={{ fontSize:11, color:'#74777f' }}>Kelola laporan driver, perbaikan pool, storing, dan standby armada</p>
         </div>
-        <div style={{ display:'flex', gap:8 }}>
-          <button onClick={() => setShowMF(true)}
-            style={{ background:'#0F172A', color:'#fff', border:'none', borderRadius:8, padding:'8px 12px', fontSize:11, fontWeight:700, cursor:'pointer' }}>
-            + Tambah Perbaikan
-          </button>
-          <button onClick={() => setShowSF(true)}
-            style={{ background:'#fff', color:'#0F172A', border:'1px solid #0F172A', borderRadius:8, padding:'8px 12px', fontSize:11, fontWeight:700, cursor:'pointer' }}>
-            + Standby
-          </button>
-        </div>
+        {canManage && (
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={() => setShowMF(true)}
+              style={{ background:'#0F172A', color:'#fff', border:'none', borderRadius:8, padding:'8px 12px', fontSize:11, fontWeight:700, cursor:'pointer' }}>
+              + Tambah Perbaikan
+            </button>
+            <button onClick={() => setShowSF(true)}
+              style={{ background:'#fff', color:'#0F172A', border:'1px solid #0F172A', borderRadius:8, padding:'8px 12px', fontSize:11, fontWeight:700, cursor:'pointer' }}>
+              + Standby
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -439,8 +441,8 @@ export default function LaporanStoringPage() {
                       </p>
                     </div>
                     <button onClick={() => setSelected(l)}
-                      style={{ background:'#0F172A', color:'#fff', border:'none', borderRadius:8, padding:'8px 14px', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
-                      Putuskan →
+                      style={{ background: canManage ? '#0F172A' : '#2563eb', color:'#fff', border:'none', borderRadius:8, padding:'8px 14px', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
+                      {canManage ? 'Putuskan →' : '👁️ Detail'}
                     </button>
                   </div>
                 );

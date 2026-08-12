@@ -43,7 +43,7 @@ const FORM_DEFAULT = {
 };
 
 export default function UnitPage() {
-  const { profile }             = useAuth();
+  const { profile, canManage = true } = useAuth();
   const [units, setUnits]       = useState([]);
   const [drivers, setDrivers]   = useState([]);
   const [loading, setLoad]      = useState(true);
@@ -289,17 +289,21 @@ export default function UnitPage() {
               padding:'8px 14px', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:C.body }}>
             📥 Template Excel
           </button>
-          <button onClick={()=>fileRef.current?.click()} disabled={importing}
-            style={{ background:C.card, color:C.blue, border:`1px solid ${C.blue}`, borderRadius:7,
-              padding:'8px 14px', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:C.body }}>
-            {importing?'⏳ Import...':'📊 Import Excel'}
-          </button>
-          <button onClick={openTambah}
-            style={{ background:C.navy, color:'#fff', border:'none', borderRadius:7,
-              padding:'8px 16px', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:C.body }}>
-            + Tambah Unit
-          </button>
-          <input ref={fileRef} type="file" accept=".xlsx,.xls" style={{display:'none'}} onChange={handleImportExcel}/>
+          {canManage && (
+            <>
+              <button onClick={()=>fileRef.current?.click()} disabled={importing}
+                style={{ background:C.card, color:C.blue, border:`1px solid ${C.blue}`, borderRadius:7,
+                  padding:'8px 14px', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:C.body }}>
+                {importing?'⏳ Import...':'📊 Import Excel'}
+              </button>
+              <button onClick={openTambah}
+                style={{ background:C.navy, color:'#fff', border:'none', borderRadius:7,
+                  padding:'8px 16px', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:C.body }}>
+                + Tambah Unit
+              </button>
+              <input ref={fileRef} type="file" accept=".xlsx,.xls" style={{display:'none'}} onChange={handleImportExcel}/>
+            </>
+          )}
         </div>
       </div>
 
@@ -397,20 +401,24 @@ export default function UnitPage() {
                     <td style={{ padding:'11px 14px', fontFamily:C.mono, color:C.textLight,
                       whiteSpace:'nowrap' }}>{(u.km_terakhir||0).toLocaleString('id-ID')} km</td>
                     <td style={{ padding:'11px 14px' }}>
-                      <div style={{ display:'flex', gap:6 }}>
-                        <button onClick={()=>openEdit(u)}
-                          style={{ background:'#EFF6FF', color:C.blue, border:`1px solid #BFDBFE`,
-                            borderRadius:6, padding:'4px 10px', fontSize:11, fontWeight:600,
-                            cursor:'pointer', fontFamily:C.body }}>
-                          ✏️ Edit
-                        </button>
-                        <button onClick={()=>setDel(u)}
-                          style={{ background:C.redBg, color:C.red, border:`1px solid #FECDD3`,
-                            borderRadius:6, padding:'4px 10px', fontSize:11, fontWeight:600,
-                            cursor:'pointer', fontFamily:C.body }}>
-                          🗑️
-                        </button>
-                      </div>
+                      {canManage ? (
+                        <div style={{ display:'flex', gap:6 }}>
+                          <button onClick={()=>openEdit(u)}
+                            style={{ background:'#EFF6FF', color:C.blue, border:`1px solid #BFDBFE`,
+                              borderRadius:6, padding:'4px 10px', fontSize:11, fontWeight:600,
+                              cursor:'pointer', fontFamily:C.body }}>
+                            ✏️ Edit
+                          </button>
+                          <button onClick={()=>setDel(u)}
+                            style={{ background:C.redBg, color:C.red, border:`1px solid #FECDD3`,
+                              borderRadius:6, padding:'4px 10px', fontSize:11, fontWeight:600,
+                              cursor:'pointer', fontFamily:C.body }}>
+                            🗑️
+                          </button>
+                        </div>
+                      ) : (
+                        <span style={{ fontSize:11, color:C.textLight, fontStyle:'italic' }}>Read Only</span>
+                      )}
                     </td>
                   </tr>
                 );

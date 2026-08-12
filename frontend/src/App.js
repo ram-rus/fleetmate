@@ -46,7 +46,7 @@ function AdminOnly({ children }) {
   const { user, profile, loading } = useAuth();
   if (loading) return <Loading/>;
   if (!user)   return <Navigate to="/login" replace/>;
-  if (!['admin','supervisor','manager'].includes(profile?.role)) return <Navigate to="/login" replace/>;
+  if (!['admin','supervisor','manager','monitoring'].includes(profile?.role)) return <Navigate to="/login" replace/>;
   return children;
 }
 
@@ -54,7 +54,7 @@ function GuestOnly({ children }) {
   const { user, profile, loading } = useAuth();
   if (loading) return <Loading/>;
   if (user && profile) {
-    if (['admin','supervisor','manager'].includes(profile.role)) return <Navigate to="/admin" replace/>;
+    if (['admin','supervisor','manager','monitoring'].includes(profile.role)) return <Navigate to="/admin" replace/>;
     if (profile.role === 'mekanik') return <Navigate to="/admin" replace/>;
   }
   return children;

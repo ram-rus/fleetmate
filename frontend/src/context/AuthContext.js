@@ -46,8 +46,10 @@ export function AuthProvider({ children }) {
     <Ctx.Provider value={{
       user, profile, loading, login, logout,
       isAdmin: ['admin','supervisor','manager'].includes(profile?.role),
+      isMonitoring: profile?.role === 'monitoring',
       isDriver: profile?.role === 'driver',
-      isAdminOrAbove: ['admin','supervisor','manager'].includes(profile?.role),
+      isAdminOrAbove: ['admin','supervisor','manager','monitoring'].includes(profile?.role),
+      canManage: ['admin','supervisor','manager'].includes(profile?.role),
     }}>
       {children}
     </Ctx.Provider>
