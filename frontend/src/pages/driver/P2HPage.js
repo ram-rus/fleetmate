@@ -45,6 +45,17 @@ const BAN_CONFIG = {
   'cde': [
     'depan_kiri', 'depan_kanan', 'engkel_kiri', 'engkel_kanan', 'ban_stip',
   ],
+  // Fuso memakai konfigurasi roda Wing Box (tronton).
+  'fuso': [
+    'depan_kiri', 'depan_kanan',
+    'engkel_kiri_luar', 'engkel_kiri_dalam', 'engkel_kanan_luar', 'engkel_kanan_dalam',
+    'tronton_kiri_luar', 'tronton_kiri_dalam', 'tronton_kanan_luar', 'tronton_kanan_dalam',
+    'ban_stip',
+  ],
+  // Grandmax memakai konfigurasi roda CDE.
+  'grandmax': [
+    'depan_kiri', 'depan_kanan', 'engkel_kiri', 'engkel_kanan', 'ban_stip',
+  ],
 };
 
 const BAN_LABEL = {

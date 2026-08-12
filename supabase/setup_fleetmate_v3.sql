@@ -52,7 +52,7 @@ CREATE TABLE public.users (
 CREATE TABLE public.units (
   id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   nopol         TEXT NOT NULL UNIQUE,
-  tipe          TEXT NOT NULL CHECK (tipe IN ('Wing Box','CDD')),
+  tipe          TEXT NOT NULL CHECK (tipe IN ('Wing Box','CDD','CDE','Fuso','Grandmax')),
   merk          TEXT NOT NULL,
   tahun_buat    INTEGER NOT NULL,
   warna         TEXT,
