@@ -1,8 +1,14 @@
-// src/pages/driver/P2HPage.js — v7
+// src/pages/driver/P2HPage.js — v8
 // Checklist P2H per section (fluida, rem, ban, dokumen, APD/perlengkapan, lain)
 // Severity 3 tingkat: OK / PERHATIAN / BAHAYA -> LAYAK / LAYAK DENGAN CATATAN / TIDAK LAYAK
+// Aturan status (v8, dilonggarkan):
+//   Oli mesin / Air radiator / Minyak rem : Berkurang = CATATAN | Kritis, Kosong = TIDAK LAYAK
+//   Rem depan / belakang                  : Kurang = CATATAN    | Bocor = TIDAK LAYAK
+//   Ban (selain ban stip)                 : Gundul, Bocor = CATATAN (tidak pernah TIDAK LAYAK)
+//   Ban stip, Surat-surat, APD/Perlengkapan, Item lain : TIDAK memengaruhi status sama sekali
 // Ban dinamis mengikuti units.tipe (Wing Box / CDD / CDE) berdasarkan driver.unit_id
 import React, { useState, useEffect, useMemo } from 'react';
+import { BAN_CONFIG, BAN_LABEL, normalizeTipeBan as normalizeTipe, getBanKeys } from '../../lib/perbaikanConstants';
 import { supabase } from '../../lib/supabase';
 import { useDriverAuth } from '../../context/DriverAuthContext';
 import DriverLayout from '../../components/layout/DriverLayout';
@@ -24,80 +30,6 @@ const STATUS_COLOR = {
   'TIDAK LAYAK':          { bg: '#fee2e2', fg: '#7f1d1d' },
 };
 
-// ---------- Konfigurasi ban per tipe unit ----------
-// Sumber tipe: kolom units.tipe (dilihat dari Data Unit admin: "Wing Box", "CDD").
-// CDE belum ada unitnya di database saat kode ini ditulis — asumsi string "CDE".
-// Kalau nanti string aslinya beda, tinggal sesuaikan key di BAN_CONFIG (sudah
-// dinormalisasi lowercase+trim jadi tidak sensitif kapitalisasi/spasi).
-
-const BAN_CONFIG = {
-  'wing box': [
-    'depan_kiri', 'depan_kanan',
-    'engkel_kiri_luar', 'engkel_kiri_dalam', 'engkel_kanan_luar', 'engkel_kanan_dalam',
-    'tronton_kiri_luar', 'tronton_kiri_dalam', 'tronton_kanan_luar', 'tronton_kanan_dalam',
-    'ban_stip',
-  ],
-  'wingbox': [
-    'depan_kiri', 'depan_kanan',
-    'engkel_kiri_luar', 'engkel_kiri_dalam', 'engkel_kanan_luar', 'engkel_kanan_dalam',
-    'tronton_kiri_luar', 'tronton_kiri_dalam', 'tronton_kanan_luar', 'tronton_kanan_dalam',
-    'ban_stip',
-  ],
-  'cdd': [
-    'depan_kiri', 'depan_kanan',
-    'engkel_kiri_luar', 'engkel_kiri_dalam', 'engkel_kanan_luar', 'engkel_kanan_dalam',
-    'ban_stip',
-  ],
-  'cde': [
-    'depan_kiri', 'depan_kanan', 'engkel_kiri', 'engkel_kanan', 'ban_stip',
-  ],
-  // Fuso memakai konfigurasi roda CDD (6 roda + ban stip).
-  'fuso': [
-    'depan_kiri', 'depan_kanan',
-    'engkel_kiri_luar', 'engkel_kiri_dalam', 'engkel_kanan_luar', 'engkel_kanan_dalam',
-    'ban_stip',
-  ],
-  // Grandmax memakai konfigurasi roda CDE (4 roda + ban stip).
-  'grandmax': [
-    'depan_kiri', 'depan_kanan', 'engkel_kiri', 'engkel_kanan', 'ban_stip',
-  ],
-  'grand max': [
-    'depan_kiri', 'depan_kanan', 'engkel_kiri', 'engkel_kanan', 'ban_stip',
-  ],
-  'granmax': [
-    'depan_kiri', 'depan_kanan', 'engkel_kiri', 'engkel_kanan', 'ban_stip',
-  ],
-  'gran max': [
-    'depan_kiri', 'depan_kanan', 'engkel_kiri', 'engkel_kanan', 'ban_stip',
-  ],
-};
-
-const BAN_LABEL = {
-  depan_kiri: 'Depan kiri', depan_kanan: 'Depan kanan',
-  engkel_kiri: 'Engkel kiri', engkel_kanan: 'Engkel kanan',
-  engkel_kiri_luar: 'Engkel kiri luar', engkel_kiri_dalam: 'Engkel kiri dalam',
-  engkel_kanan_luar: 'Engkel kanan luar', engkel_kanan_dalam: 'Engkel kanan dalam',
-  tronton_kiri_luar: 'Tronton kiri luar', tronton_kiri_dalam: 'Tronton kiri dalam',
-  tronton_kanan_luar: 'Tronton kanan luar', tronton_kanan_dalam: 'Tronton kanan dalam',
-  ban_stip: 'Ban stip',
-};
-
-function normalizeTipe(tipe) {
-  const str = (tipe || '').toLowerCase().trim().replace(/[-_]/g, ' ');
-  if (str.includes('gran') || str.includes('grand') || str.includes('max') || str.includes('l300') || str.includes('traga') || str.includes('carry')) return 'grandmax';
-  if (str.includes('fuso')) return 'fuso';
-  if (str.includes('wing') || str.includes('box')) return 'wing box';
-  if (str.includes('cdd')) return 'cdd';
-  if (str.includes('cde') || str.includes('engkel')) return 'cde';
-  return str;
-}
-
-function getBanKeys(tipeUnit) {
-  const norm = normalizeTipe(tipeUnit);
-  if (BAN_CONFIG[norm]) return BAN_CONFIG[norm];
-  return BAN_CONFIG['cde']; // fallback aman jika tipe belum terdaftar agar driver tidak terhalang P2H
-}
-
 // ---------- Opsi per item ----------
 
 const FLUIDA_OPTS = [
@@ -107,12 +39,8 @@ const FLUIDA_OPTS = [
   { value: 'kosong',    label: 'Kosong',    severity: SEV.BAHAYA },
 ];
 
-const MINYAK_REM_OPTS = [
-  { value: 'normal',    label: 'Normal',    severity: SEV.OK },
-  { value: 'berkurang', label: 'Berkurang', severity: SEV.BAHAYA },
-  { value: 'kritis',    label: 'Kritis',    severity: SEV.BAHAYA },
-  { value: 'kosong',    label: 'Kosong',    severity: SEV.BAHAYA },
-];
+// v8: Minyak rem disamakan dengan oli & radiator — Berkurang cuma CATATAN.
+const MINYAK_REM_OPTS = FLUIDA_OPTS;
 
 const REM_OPTS = [
   { value: 'normal', label: 'Normal', severity: SEV.OK },
@@ -120,10 +48,18 @@ const REM_OPTS = [
   { value: 'bocor',  label: 'Bocor',  severity: SEV.BAHAYA },
 ];
 
+// v8: ban terpasang — Gundul / Bocor cuma CATATAN, tidak pernah TIDAK LAYAK.
 const BAN_OPTS = [
   { value: 'normal', label: 'Normal', severity: SEV.OK },
-  { value: 'gundul', label: 'Gundul', severity: SEV.BAHAYA },
-  { value: 'bocor',  label: 'Bocor',  severity: SEV.BAHAYA },
+  { value: 'gundul', label: 'Gundul', severity: SEV.PERHATIAN },
+  { value: 'bocor',  label: 'Bocor',  severity: SEV.PERHATIAN },
+];
+
+// v8: Ban stip — kondisi apapun tetap LAYAK. Tanpa severity = hanya informasi.
+const BAN_STIP_OPTS = [
+  { value: 'normal', label: 'Normal' },
+  { value: 'gundul', label: 'Gundul' },
+  { value: 'bocor',  label: 'Bocor'  },
 ];
 
 // Dokumen tidak punya severity — murni catatan, tidak pengaruh ke status akhir.
@@ -141,17 +77,20 @@ const APD_PERLENGKAPAN_OPTS = [
   { value: 'tidak_ada', label: 'Tidak ada' },
 ];
 
-// Item kritis (lampu depan): NOK langsung BAHAYA, konsisten dengan aturan bisnis lama.
-const OK_OPTS_KRITIS = [
-  { value: 'ok',  label: 'OK',  severity: SEV.OK },
-  { value: 'nok', label: 'NOK', severity: SEV.BAHAYA },
+// v8: Item lain (lampu, wiper, klakson, kebersihan) hanya informasi —
+// tidak memengaruhi status LAYAK / TIDAK LAYAK, termasuk lampu depan.
+const OK_OPTS_INFO = [
+  { value: 'ok',  label: 'OK'  },
+  { value: 'nok', label: 'NOK' },
 ];
 
-// Item ringan: NOK cuma PERHATIAN.
-const OK_OPTS_RINGAN = [
-  { value: 'ok',  label: 'OK',  severity: SEV.OK },
-  { value: 'nok', label: 'NOK', severity: SEV.PERHATIAN },
-];
+// Nilai yang dianggap "baik" untuk item yang cuma informasi (warna hijau).
+const INFO_OK_VALUES = ['ada', 'ok', 'normal'];
+function infoColor(value) {
+  return INFO_OK_VALUES.includes(value) ? SEV_COLOR[SEV.OK] : SEV_COLOR[SEV.BAHAYA];
+}
+// Item/section yang tidak ikut dihitung ke status akhir.
+function isInfo(sec, it) { return !!(sec.catatanOnly || it.infoOnly); }
 
 function buildSections(banKeys) {
   return [
@@ -172,7 +111,11 @@ function buildSections(banKeys) {
     },
     {
       id: 'ban', title: 'Ban',
-      items: (banKeys || []).map(k => ({ key: k, label: BAN_LABEL[k] || k, opts: BAN_OPTS })),
+      items: (banKeys || []).map(k => ({
+        key: k, label: BAN_LABEL[k] || k,
+        opts: k === 'ban_stip' ? BAN_STIP_OPTS : BAN_OPTS,
+        infoOnly: k === 'ban_stip',
+      })),
     },
     {
       id: 'dokumen', title: 'Surat-surat', catatanOnly: true,
@@ -198,14 +141,14 @@ function buildSections(banKeys) {
       ],
     },
     {
-      id: 'lain', title: 'Item lain',
+      id: 'lain', title: 'Item lain', catatanOnly: true,
       items: [
-        { key: 'lampu_depan',    label: 'Lampu depan',      opts: OK_OPTS_KRITIS },
-        { key: 'lampu_belakang', label: 'Lampu belakang',   opts: OK_OPTS_RINGAN },
-        { key: 'lampu_sein',     label: 'Lampu sein',       opts: OK_OPTS_RINGAN },
-        { key: 'wiper',          label: 'Wiper / kaca',     opts: OK_OPTS_RINGAN },
-        { key: 'klakson',        label: 'Klakson',          opts: OK_OPTS_RINGAN },
-        { key: 'kebersihan',     label: 'Kebersihan kabin', opts: OK_OPTS_RINGAN },
+        { key: 'lampu_depan',    label: 'Lampu depan',      opts: OK_OPTS_INFO },
+        { key: 'lampu_belakang', label: 'Lampu belakang',   opts: OK_OPTS_INFO },
+        { key: 'lampu_sein',     label: 'Lampu sein',       opts: OK_OPTS_INFO },
+        { key: 'wiper',          label: 'Wiper / kaca',     opts: OK_OPTS_INFO },
+        { key: 'klakson',        label: 'Klakson',          opts: OK_OPTS_INFO },
+        { key: 'kebersihan',     label: 'Kebersihan kabin', opts: OK_OPTS_INFO },
       ],
     },
   ];
@@ -234,8 +177,9 @@ function severityOf(sec, it, hasil) {
 function computeStatus(sections, hasil) {
   let maxSeverity = SEV.OK;
   sections.forEach(sec => {
-    if (sec.catatanOnly) return; // dokumen tidak pengaruh ke status
+    if (sec.catatanOnly) return; // surat, APD, item lain: tidak pengaruh ke status
     sec.items.forEach(it => {
+      if (it.infoOnly) return;   // ban stip: tidak pengaruh ke status
       const s = severityOf(sec, it, hasil);
       if (s > maxSeverity) maxSeverity = s;
     });
@@ -385,6 +329,7 @@ export default function DriverP2HPage() {
           const isOpen = openSection === sec.id;
           let sectionMaxSeverity = SEV.OK;
           sec.items.forEach(it => {
+            if (isInfo(sec, it)) return;
             const s = severityOf(sec, it, hasil);
             if (s > sectionMaxSeverity) sectionMaxSeverity = s;
           });
@@ -415,8 +360,8 @@ export default function DriverP2HPage() {
                     const current = hasil[sec.id]?.[it.key];
                     const val = current?.value;
                     const opt = it.opts.find(o => o.value === val) || it.opts[0];
-                    const color = sec.catatanOnly
-                      ? (opt.value === 'ada' ? SEV_COLOR[SEV.OK] : SEV_COLOR[SEV.BAHAYA])
+                    const color = isInfo(sec, it)
+                      ? infoColor(opt.value)
                       : SEV_COLOR[opt.severity];
                     return (
                       <div key={it.key} style={{ marginBottom: 10 }}>
@@ -427,8 +372,8 @@ export default function DriverP2HPage() {
                         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${it.opts.length}, 1fr)`, gap: 6 }}>
                           {it.opts.map(o => {
                             const active = o.value === val;
-                            const c = sec.catatanOnly
-                              ? (o.value === 'ada' ? SEV_COLOR[SEV.OK] : SEV_COLOR[SEV.BAHAYA])
+                            const c = isInfo(sec, it)
+                              ? infoColor(o.value)
                               : SEV_COLOR[o.severity];
                             return (
                               <button key={o.value} onClick={() => setItemValue(sec.id, it.key, o)}

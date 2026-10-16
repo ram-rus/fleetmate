@@ -17,8 +17,13 @@ export default function LoginPage() {
     setError('');
 
     try {
+      let targetEmail = email.trim();
+      if (!targetEmail.includes('@')) {
+        targetEmail = `${targetEmail}@mms.com`;
+      }
+
       // Step 1: Login
-      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error: authError } = await supabase.auth.signInWithPassword({ email: targetEmail, password });
       if (authError) throw authError;
 
       // Step 2: Ambil role

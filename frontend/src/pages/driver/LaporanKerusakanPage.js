@@ -87,7 +87,7 @@ export default function LaporanKerusakanPage() {
 
   useEffect(() => {
     loadLaporanAktif();
-    const ch = supabase.channel('laporan-driver')
+    const ch = supabase.channel('laporan-driver-' + Math.random().toString(36).slice(2,8))
       .on('postgres_changes', {
         event:'UPDATE', schema:'public', table:'laporan_kerusakan',
         filter:`driver_id=eq.${driver?.id}`,

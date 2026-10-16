@@ -81,7 +81,7 @@ export default function P2HPage() {
 
   useEffect(() => {
     loadToday();
-    const channel = supabase.channel('p2h-admin-channel').on('postgres_changes', { event:'*', schema:'public', table:'p2h' }, () => {
+    const channel = supabase.channel('p2h-admin-channel-' + Math.random().toString(36).slice(2,8)).on('postgres_changes', { event:'*', schema:'public', table:'p2h' }, () => {
       loadToday();
       if (activeTab === 'laporan') loadReport();
     }).subscribe();

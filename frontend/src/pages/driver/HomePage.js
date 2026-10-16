@@ -159,7 +159,7 @@ export default function DriverHomePage() {
     if (!driver?.unit_id) return;
 
     // 1. Supabase Realtime Subscription
-    const channelId = `driver-home-${driver.unit_id}`;
+    const channelId = `driver-home-${driver.unit_id}-${Math.random().toString(36).slice(2,8)}`;
 const ch = supabase.channel(channelId)
   .on('postgres_changes', { event: '*', schema: 'public', table: 'perbaikan', filter: `unit_id=eq.${driver.unit_id}` }, () => {
     loadData();

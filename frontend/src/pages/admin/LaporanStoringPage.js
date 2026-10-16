@@ -2,7 +2,7 @@
 // src/pages/admin/LaporanStoringPage.js — v5.3
 // 5 tab: Laporan Baru | Perbaikan | Storing | Standby | Histori
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -65,7 +65,7 @@ export default function LaporanStoringPage() {
   const [mfNamaLuar, setMfNL]     = useState('');
   const [mfHpLuar, setMfHL]       = useState('');
 
-  const loadData = useCallback(async () => {
+  const loadData = async () => {
     setLoad(true);
     const [lapRes, prbRes, sbRes, histRes] = await Promise.all([
       supabase.from('laporan_kerusakan')
@@ -92,19 +92,19 @@ export default function LaporanStoringPage() {
     setStandby(  sbRes.data   || []);
     setHistori(  histRes.data || []);
     setLoad(false);
-  }, []);
+  };
 
   useEffect(() => {
     loadData();
     supabase.from('users').select('id,nama,no_hp').eq('role','mekanik').then(({data})=>setMekaniks(data||[]));
     supabase.from('units').select('id,nopol,tipe').order('nopol').then(({data})=>setUnits(data||[]));
-    const ch = supabase.channel('laporan-storing-v53')
+    const ch = supabase.channel('laporan-storing-v53-' + Math.random().toString(36).slice(2,8))
       .on('postgres_changes',{event:'*',schema:'public',table:'laporan_kerusakan'},loadData)
       .on('postgres_changes',{event:'*',schema:'public',table:'perbaikan'},loadData)
       .on('postgres_changes',{event:'*',schema:'public',table:'standby_log'},loadData)
       .subscribe();
     return () => supabase.removeChannel(ch);
-  }, [loadData]);
+  }, []);
 
   async function loadLogs(id) {
     const { data } = await supabase.from('perbaikan_log')

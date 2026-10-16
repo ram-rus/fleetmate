@@ -114,3 +114,62 @@ export const ALASAN_STANDBY = [
   { value:'Standby Tidak Ada Sopir', icon:'🚫', label:'Tidak Ada Sopir' },
   { value:'Standby Driver Izin',     icon:'🙅', label:'Driver Izin'     },
 ];
+
+// ── Konfigurasi ban per tipe unit ──────────────────────────
+// Dipisahkan dari komponen agar admin bisa tambah tipe unit baru
+// tanpa edit kode komponen — cukup edit file ini.
+export const BAN_CONFIG = {
+  'wing box': [
+    'depan_kiri', 'depan_kanan',
+    'engkel_kiri_luar', 'engkel_kiri_dalam', 'engkel_kanan_luar', 'engkel_kanan_dalam',
+    'tronton_kiri_luar', 'tronton_kiri_dalam', 'tronton_kanan_luar', 'tronton_kanan_dalam',
+    'ban_stip',
+  ],
+  'wingbox': [
+    'depan_kiri', 'depan_kanan',
+    'engkel_kiri_luar', 'engkel_kiri_dalam', 'engkel_kanan_luar', 'engkel_kanan_dalam',
+    'tronton_kiri_luar', 'tronton_kiri_dalam', 'tronton_kanan_luar', 'tronton_kanan_dalam',
+    'ban_stip',
+  ],
+  'cdd': [
+    'depan_kiri', 'depan_kanan',
+    'engkel_kiri_luar', 'engkel_kiri_dalam', 'engkel_kanan_luar', 'engkel_kanan_dalam',
+    'ban_stip',
+  ],
+  'cde': [
+    'depan_kiri', 'depan_kanan', 'engkel_kiri', 'engkel_kanan', 'ban_stip',
+  ],
+  'fuso': [
+    'depan_kiri', 'depan_kanan',
+    'engkel_kiri_luar', 'engkel_kiri_dalam', 'engkel_kanan_luar', 'engkel_kanan_dalam',
+    'ban_stip',
+  ],
+  'grandmax': [
+    'depan_kiri', 'depan_kanan', 'engkel_kiri', 'engkel_kanan', 'ban_stip',
+  ],
+};
+
+export const BAN_LABEL = {
+  depan_kiri: 'Depan kiri', depan_kanan: 'Depan kanan',
+  engkel_kiri: 'Engkel kiri', engkel_kanan: 'Engkel kanan',
+  engkel_kiri_luar: 'Engkel kiri luar', engkel_kiri_dalam: 'Engkel kiri dalam',
+  engkel_kanan_luar: 'Engkel kanan luar', engkel_kanan_dalam: 'Engkel kanan dalam',
+  tronton_kiri_luar: 'Tronton kiri luar', tronton_kiri_dalam: 'Tronton kiri dalam',
+  tronton_kanan_luar: 'Tronton kanan luar', tronton_kanan_dalam: 'Tronton kanan dalam',
+  ban_stip: 'Ban stip',
+};
+
+export function normalizeTipeBan(tipe) {
+  const str = (tipe || '').toLowerCase().trim().replace(/[-_]/g, ' ');
+  if (str.includes('gran') || str.includes('grand') || str.includes('max') || str.includes('l300') || str.includes('traga') || str.includes('carry')) return 'grandmax';
+  if (str.includes('fuso')) return 'fuso';
+  if (str.includes('wing') || str.includes('box')) return 'wing box';
+  if (str.includes('cdd')) return 'cdd';
+  if (str.includes('cde') || str.includes('engkel')) return 'cde';
+  return str;
+}
+
+export function getBanKeys(tipeUnit) {
+  const norm = normalizeTipeBan(tipeUnit);
+  return BAN_CONFIG[norm] || BAN_CONFIG['cde'];
+}

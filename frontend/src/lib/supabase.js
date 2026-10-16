@@ -1,7 +1,12 @@
+// src/lib/supabase.js — FleetMate v6
 import { createClient } from '@supabase/supabase-js';
 
 const URL = process.env.REACT_APP_SUPABASE_URL || 'https://dbmlukdtykshvtnofbby.supabase.co';
 const KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
+
+if (!KEY) {
+  console.warn('[FleetMate] ⚠️ REACT_APP_SUPABASE_ANON_KEY tidak diset! Query Supabase akan gagal.');
+}
 
 export const supabase = createClient(URL, KEY, {
   auth: { autoRefreshToken:true, persistSession:true, detectSessionInUrl:false }

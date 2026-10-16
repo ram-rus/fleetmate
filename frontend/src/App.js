@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DriverAuthProvider, useDriverAuth } from './context/DriverAuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Admin pages
 import AdminLayout       from './components/layout/AdminLayout';
@@ -93,16 +94,16 @@ function AppRoutes() {
       <Route path="/driver/login" element={<DriverGuestOnly><DriverLoginPage/></DriverGuestOnly>}/>
 
       {/* Admin */}
-      <Route path="/admin"                 element={<AdminOnly><A><OverviewPage/></A></AdminOnly>}/>
-      <Route path="/admin/p2h"             element={<AdminOnly><A><P2HAdminPage/></A></AdminOnly>}/>
-      <Route path="/admin/laporan-storing" element={<AdminOnly><A><LaporanStoringPage/></A></AdminOnly>}/>
-      <Route path="/admin/unit"            element={<AdminOnly><A><UnitPage/></A></AdminOnly>}/>
+      <Route path="/admin"                 element={<AdminOnly><A><ErrorBoundary><OverviewPage/></ErrorBoundary></A></AdminOnly>}/>
+      <Route path="/admin/p2h"             element={<AdminOnly><A><ErrorBoundary><P2HAdminPage/></ErrorBoundary></A></AdminOnly>}/>
+      <Route path="/admin/laporan-storing" element={<AdminOnly><A><ErrorBoundary><LaporanStoringPage/></ErrorBoundary></A></AdminOnly>}/>
+      <Route path="/admin/unit"            element={<AdminOnly><A><ErrorBoundary><UnitPage/></ErrorBoundary></A></AdminOnly>}/>
 
       {/* Driver */}
-      <Route path="/driver"           element={<DriverOnly><DriverHome/></DriverOnly>}/>
-      <Route path="/driver/p2h"       element={<DriverOnly><DriverP2H/></DriverOnly>}/>
-      <Route path="/driver/kerusakan" element={<DriverOnly><DriverKerusakan/></DriverOnly>}/>
-      <Route path="/driver/histori"   element={<DriverOnly><DriverHistori/></DriverOnly>}/>
+      <Route path="/driver"           element={<DriverOnly><ErrorBoundary><DriverHome/></ErrorBoundary></DriverOnly>}/>
+      <Route path="/driver/p2h"       element={<DriverOnly><ErrorBoundary><DriverP2H/></ErrorBoundary></DriverOnly>}/>
+      <Route path="/driver/kerusakan" element={<DriverOnly><ErrorBoundary><DriverKerusakan/></ErrorBoundary></DriverOnly>}/>
+      <Route path="/driver/histori"   element={<DriverOnly><ErrorBoundary><DriverHistori/></ErrorBoundary></DriverOnly>}/>
 
       <Route path="*" element={<Navigate to="/login" replace/>}/>
     </Routes>

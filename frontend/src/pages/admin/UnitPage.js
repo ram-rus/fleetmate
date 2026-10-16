@@ -1,5 +1,6 @@
 // src/pages/admin/UnitPage.js — v5.8
 // Fix: import XLSX langsung (bukan window.XLSX), field nama_customer jika Kontrak,
+import { C } from '../../lib/theme';
 //      guard duplikat storing di frontend
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -8,13 +9,6 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
-const C = {
-  navy:'#0F172A', blue:'#2170E4', green:'#059669', amber:'#D97706',
-  red:'#C94A3A', redBg:'#FDE8E8', border:'#E2E8F0', bg:'#F5F3EF',
-  text:'#111827', textDim:'#6B7280', textLight:'#9CA3AF',
-  card:'#FFFFFF', head:"'Hanken Grotesk','Inter',sans-serif",
-  body:"'Inter',sans-serif", mono:"'JetBrains Mono',monospace",
-};
 
 const STATUS_STYLE = {
   'Sedang Jalan':              { bg:'#ECFDF5', color:'#059669' },

@@ -2,6 +2,7 @@
 // Alur login driver self-service:
 // 1. Ketik nopol unit langsung → tombol "Cari Unit" → sistem cocokkan ke database
 // 2. Jika ada driver tetap & device dikenali → tombol besar "Lanjutkan sebagai [Nama]"
+import { normalisasiNopol } from '../../../lib/nopolUtils';
 // 3. Jika driver pengganti / device baru → form No HP + PIN (daftar otomatis jika baru)
 
 import React, { useState, useCallback } from 'react';
@@ -19,10 +20,7 @@ const T = {
 
 const STEPS = { PILIH_UNIT:'pilih_unit', KONFIRMASI:'konfirmasi', FORM_HP_PIN:'form_hp_pin' };
 
-// Normalisasi nopol: hapus spasi berlebih, uppercase — agar "b 1001 mms" = "B 1001 MMS"
-function normalisasiNopol(s) {
-  return s.trim().toUpperCase().replace(/\s+/g, ' ');
-}
+
 
 export default function DriverLoginPage() {
   const navigate = useNavigate();

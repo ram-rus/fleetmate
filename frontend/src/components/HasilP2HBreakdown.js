@@ -6,13 +6,15 @@
 // tempat.
 import React from 'react';
 
-export const SECTION_LABEL = { fluida:'Cairan & fluida', rem:'Rem', ban:'Ban', dokumen:'Surat-surat', apd_perlengkapan:'APD & Perlengkapan', lain:'Item lain' };
+export const SECTION_LABEL = { fluida:'Cairan & fluida', rem:'Rem', ban:'Ban', dokumen:'Surat-surat', apd_perlengkapan:'APD & perlengkapan', lain:'Item lain' };
+
+// Urutan section yang ditampilkan (APD & perlengkapan ditambahkan di v8)
+export const SECTION_ORDER = ['fluida', 'rem', 'ban', 'dokumen', 'apd_perlengkapan', 'lain'];
 
 export const ITEM_LABEL = {
   oli_mesin:'Oli mesin', air_radiator:'Air radiator', minyak_rem:'Minyak rem',
   rem_depan:'Rem depan', rem_belakang:'Rem belakang',
   stnk:'STNK', kir:'KIR', sim:'SIM driver',
-  rompi_safety:'Rompi safety', helm_safety:'Helm safety', ganjal_1:'Ganjal 1', ganjal_2:'Ganjal 2', seragam_mms:'Seragam MMS', dongkrak:'Dongkrak', kunci_roda:'Kunci roda', apar:'APAR', kotak_p3k:'Kotak P3K', segitiga_pengaman:'Segitiga pengaman',
   lampu_depan:'Lampu depan', lampu_belakang:'Lampu belakang', lampu_sein:'Lampu sein',
   wiper:'Wiper / kaca', klakson:'Klakson', kebersihan:'Kebersihan kabin',
   depan_kiri:'Depan kiri', depan_kanan:'Depan kanan',
@@ -22,6 +24,9 @@ export const ITEM_LABEL = {
   tronton_kiri_luar:'Tronton kiri luar', tronton_kiri_dalam:'Tronton kiri dalam',
   tronton_kanan_luar:'Tronton kanan luar', tronton_kanan_dalam:'Tronton kanan dalam',
   ban_stip:'Ban stip',
+  rompi_safety:'Rompi safety', helm_safety:'Helm safety', ganjal_1:'Ganjal 1', ganjal_2:'Ganjal 2',
+  seragam_mms:'Seragam MMS', dongkrak:'Dongkrak', kunci_roda:'Kunci roda', apar:'APAR',
+  kotak_p3k:'Kotak P3K', segitiga_pengaman:'Segitiga pengaman',
 };
 
 // 0 = OK/hijau, 1 = perhatian/kuning, 2 = bahaya/merah — sama seperti di P2HPage driver
@@ -35,7 +40,7 @@ export const SEV_BADGE = {
 // sebelum v7 masih flat ({key: 'ok'|'tidak_ok'}). Fungsi ini membedakan keduanya.
 export function isNestedHasil(hasil) {
   if (!hasil || typeof hasil !== 'object') return false;
-  return ['fluida', 'rem', 'ban', 'dokumen', 'apd_perlengkapan', 'lain'].some(k => hasil[k] && typeof hasil[k] === 'object');
+  return SECTION_ORDER.some(k => hasil[k] && typeof hasil[k] === 'object');
 }
 
 // Fallback label kalau ketemu data lama yang isinya string mentah, bukan object {value,label,severity}
@@ -46,6 +51,11 @@ export const VALUE_LABEL = {
   ok:'OK', nok:'NOK',
 };
 export const NETRAL_BADGE = { bg:'#f1f0ea', color:'#5f5e5a' }; // dipakai saat severity data lama tidak diketahui
+
+// Item yang tidak memengaruhi status (surat, APD, item lain, ban stip) disimpan
+// dengan severity null — warnanya ditentukan dari nilainya: baik = hijau, selain itu merah.
+const INFO_OK_VALUES = ['ada', 'ok', 'normal'];
+const infoBadge = (value) => (INFO_OK_VALUES.includes(value) ? SEV_BADGE[0] : SEV_BADGE[2]);
 
 export default function HasilBreakdown({ hasil }) {
   if (!hasil || Object.keys(hasil).length === 0) return null;
@@ -73,7 +83,7 @@ export default function HasilBreakdown({ hasil }) {
 
   return (
     <div style={{ marginTop:12 }}>
-      {['fluida', 'rem', 'ban', 'dokumen', 'apd_perlengkapan', 'lain'].map(secId => {
+      {SECTION_ORDER.map(secId => {
         const items = hasil[secId];
         if (!items || Object.keys(items).length === 0) return null;
         return (
@@ -85,11 +95,11 @@ export default function HasilBreakdown({ hasil }) {
                 const isObj = raw && typeof raw === 'object';
                 const rawValue = isObj ? raw.value : raw;
                 const valLabel = isObj ? (raw.label || raw.value || '—') : (VALUE_LABEL[raw] || raw || '—');
-                const c = (secId === 'dokumen' || secId === 'apd_perlengkapan')
-                  ? (rawValue === 'ada' ? SEV_BADGE[0] : SEV_BADGE[2])
-                  : isObj
-                    ? (SEV_BADGE[raw.severity] ?? SEV_BADGE[0])
-                    : NETRAL_BADGE; // data lama (nested-string) — severity tidak tercatat, jangan nebak warna
+                const c = isObj
+                  ? (raw.severity == null
+                      ? infoBadge(rawValue)                       // item info-only (severity null)
+                      : (SEV_BADGE[raw.severity] ?? SEV_BADGE[0]))
+                  : (secId === 'dokumen' ? infoBadge(rawValue) : NETRAL_BADGE); // data lama (nested-string) — jangan nebak warna
                 return (
                   <div key={key} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:11, padding:'6px 8px', border:'1px solid #ebeced', borderRadius:6 }}>
                     <span style={{ color:'#44474e' }}>{label}</span>

@@ -7,28 +7,8 @@ import { supabase } from '../../lib/supabase';
 import { getTipe, TIPE_STORING, TIPE_PERBAIKAN } from '../../lib/perbaikanConstants';
 import { attachDriverInfo } from '../../lib/driverHelper';
 import HasilBreakdown from '../../components/HasilP2HBreakdown';
+import { C } from '../../lib/theme';
 
-const C = {
-  contentBg:  '#F5F3EF',
-  cardBg:     '#FFFFFF',
-  cardBdr:    '#EBEBEB',
-  textPrimary:'#111827',
-  textSecond: '#6B7280',
-  textLight:  '#9CA3AF',
-  labelUpper: '#9CA3AF',
-  navy:       '#1F2937',
-  blue:       '#2170E4',
-  green:      '#059669',
-  amber:      '#D97706',
-  red:        '#C94A3A',
-  redBg:      '#FDE8E8',
-  amberBg:    '#FEF3C7',
-  greenBg:    '#ECFDF5',
-  blueBg:     '#EFF6FF',
-  head:       "'Hanken Grotesk','Inter',sans-serif",
-  body:       "'Inter',sans-serif",
-  mono:       "'JetBrains Mono',monospace",
-};
 
 const STATUS_P2H_COLOR = {
   'LAYAK':                { bg:C.greenBg, color:C.green },
@@ -311,7 +291,7 @@ export default function OverviewPage() {
 
   useEffect(() => {
     loadData();
-    const ch = supabase.channel('overview-v8')
+    const ch = supabase.channel('overview-v8-' + Math.random().toString(36).slice(2,8))
       .on('postgres_changes',{event:'*',schema:'public',table:'units'},     loadData)
       .on('postgres_changes',{event:'*',schema:'public',table:'perbaikan'}, loadData)
       .on('postgres_changes',{event:'*',schema:'public',table:'laporan_kerusakan'},loadData)
